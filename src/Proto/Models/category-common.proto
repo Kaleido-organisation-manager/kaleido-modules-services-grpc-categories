@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+message Category {
+    string key = 1;
+    string name = 2;
+}
+
+message CategoryRevision {
+    string key = 1;
+    string name = 2;
+    int32 revision = 3;
+    string status = 4;
+    string createdAt = 5;
+}
+

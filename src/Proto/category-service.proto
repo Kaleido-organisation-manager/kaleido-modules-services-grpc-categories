@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+import "Models/category-create.proto";
+import "Models/category-delete.proto";
+import "Models/category-exists.proto";
+import "Models/category-get-all-by-name.proto";
+import "Models/category-get-all-revisions.proto";
+import "Models/category-get-all.proto";
+import "Models/category-get-revision.proto";
+import "Models/category-get.proto";
+import "Models/category-update.proto";
+
+service GrpcCategories {
+    rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse);
+    rpc GetAllCategories(GetAllCategoriesRequest) returns (GetAllCategoriesResponse);
+    rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
+    rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse);
+    rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse);
+    rpc GetCategoryRevision(GetCategoryRevisionRequest) returns (GetCategoryRevisionResponse);
+    rpc GetAllCategoryRevisions(GetAllCategoryRevisionsRequest) returns (GetAllCategoryRevisionsResponse);
+    rpc GetAllCategoriesByName(GetAllCategoriesByNameRequest) returns (GetAllCategoriesByNameResponse);
+    rpc CategoryExists(CategoryExistsRequest) returns (CategoryExistsResponse);
+}
+

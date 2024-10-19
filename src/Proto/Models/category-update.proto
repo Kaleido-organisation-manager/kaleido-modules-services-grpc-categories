@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+import "Models/category-common.proto";
+
+message UpdateCategoryRequest {
+    string key = 1;
+    Category category = 2;
+}
+
+message UpdateCategoryResponse {
+    Category category = 1;
+}
+

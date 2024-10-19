@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+import "Models/category-common.proto";
+
+message GetAllCategoriesByNameRequest {
+    string name = 1;
+}
+
+message GetAllCategoriesByNameResponse {
+    repeated Category categories = 1;
+}
+

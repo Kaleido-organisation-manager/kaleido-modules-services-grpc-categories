@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+message DeleteCategoryRequest {
+    string key = 1;
+}
+
+message DeleteCategoryResponse {
+    string key = 1;
+}
