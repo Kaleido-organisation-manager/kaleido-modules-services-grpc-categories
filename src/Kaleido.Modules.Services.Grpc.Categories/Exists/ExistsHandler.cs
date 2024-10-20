@@ -22,7 +22,7 @@ public class ExistsHandler : IBaseHandler<CategoryExistsRequest, CategoryExistsR
         Validator = validator;
     }
 
-    public async Task<CategoryExistsResponse> HandleAsync(CategoryExistsRequest request, CancellationToken cancellationToken)
+    public async Task<CategoryExistsResponse> HandleAsync(CategoryExistsRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling CategoryExists request for key: {Key}", request.Key);
 

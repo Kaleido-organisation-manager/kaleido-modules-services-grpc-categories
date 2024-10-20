@@ -17,6 +17,11 @@ public class GetRequestValidator : IRequestValidator<GetCategoryRequest>
 
     public Task<ValidationResult> ValidateAsync(GetCategoryRequest request, CancellationToken cancellationToken = default)
     {
+        if (request is null)
+        {
+            return Task.FromResult(new ValidationResult().AddRequiredError([nameof(request)], "Request is required"));
+        }
+
         return _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
     }
 }

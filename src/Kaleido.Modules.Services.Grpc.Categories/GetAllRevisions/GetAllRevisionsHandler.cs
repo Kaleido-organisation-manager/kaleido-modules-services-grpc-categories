@@ -22,7 +22,7 @@ public class GetAllRevisionsHandler : IBaseHandler<GetAllCategoryRevisionsReques
         Validator = validator;
     }
 
-    public async Task<GetAllCategoryRevisionsResponse> HandleAsync(GetAllCategoryRevisionsRequest request, CancellationToken cancellationToken)
+    public async Task<GetAllCategoryRevisionsResponse> HandleAsync(GetAllCategoryRevisionsRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetAllRevisions request for category with key: {Key}", request.Key);
 

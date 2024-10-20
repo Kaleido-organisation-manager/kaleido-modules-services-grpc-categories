@@ -22,7 +22,7 @@ public class UpdateHandler : IBaseHandler<UpdateCategoryRequest, UpdateCategoryR
         Validator = validator;
     }
 
-    public async Task<UpdateCategoryResponse> HandleAsync(UpdateCategoryRequest request, CancellationToken cancellationToken)
+    public async Task<UpdateCategoryResponse> HandleAsync(UpdateCategoryRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling UpdateCategory request with key: {Key}", request.Key);
         var validationResult = await Validator.ValidateAsync(request, cancellationToken);

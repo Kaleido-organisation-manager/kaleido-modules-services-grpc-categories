@@ -22,7 +22,7 @@ public class GetAllByNameHandler : IBaseHandler<GetAllCategoriesByNameRequest, G
         Validator = validator;
     }
 
-    public async Task<GetAllCategoriesByNameResponse> HandleAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken)
+    public async Task<GetAllCategoriesByNameResponse> HandleAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetAllCategoriesByName request for name: {name}", request.Name);
 

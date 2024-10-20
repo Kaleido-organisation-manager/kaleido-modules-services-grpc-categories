@@ -1,18 +1,11 @@
 using Kaleido.Modules.Services.Grpc.Categories.Common.Validators.Interfaces;
 using Kaleido.Grpc.Categories;
 using Kaleido.Common.Services.Grpc.Models.Validations;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 public class CategoryValidator : ICategoryValidator
 {
-    private readonly ICategoryRepository _categoryRepository;
-
-    public CategoryValidator(ICategoryRepository categoryRepository)
-    {
-        _categoryRepository = categoryRepository;
-    }
 
     public Task<ValidationResult> ValidateCreateAsync(CreateCategory createCategory, CancellationToken cancellationToken = default)
     {
@@ -66,7 +59,7 @@ public class CategoryValidator : ICategoryValidator
         {
             validationResult.AddInvalidFormatError([nameof(key)], "Key is required");
         }
-        if (Guid.TryParse(key, out var guid))
+        if (!Guid.TryParse(key, out var guid))
         {
             validationResult.AddInvalidFormatError([nameof(key)], "Key is not a valid GUID");
         }

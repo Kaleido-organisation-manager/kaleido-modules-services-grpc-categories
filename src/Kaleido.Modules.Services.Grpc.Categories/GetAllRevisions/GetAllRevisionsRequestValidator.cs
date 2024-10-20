@@ -18,6 +18,12 @@ public class GetAllRevisionsRequestValidator : IRequestValidator<GetAllCategoryR
     {
         var validationResult = new ValidationResult();
 
+        if (request is null)
+        {
+            validationResult.AddRequiredError([nameof(request)], "Request is required");
+            return validationResult;
+        }
+
         var keyValidationResult = await _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
         if (!keyValidationResult.IsValid)
         {

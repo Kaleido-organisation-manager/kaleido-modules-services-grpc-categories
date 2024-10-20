@@ -16,6 +16,11 @@ public class GetAllByNameRequestValidator : IRequestValidator<GetAllCategoriesBy
 
     public Task<ValidationResult> ValidateAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken = default)
     {
+        if (request is null)
+        {
+            return Task.FromResult(new ValidationResult().AddRequiredError([nameof(request)], "Request is required"));
+        }
+
         return _validator.ValidateCategoryNameAsync(request.Name, cancellationToken);
     }
 }

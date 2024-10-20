@@ -14,8 +14,28 @@ public class CreateRequestValidator : IRequestValidator<CreateCategoryRequest>
         _categoryValidator = categoryValidator;
     }
 
-    public Task<ValidationResult> ValidateAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default)
+    public async Task<ValidationResult> ValidateAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default)
     {
-        return _categoryValidator.ValidateCreateAsync(request.Category, cancellationToken);
+        var validationResult = new ValidationResult();
+
+        if (request == null)
+        {
+            validationResult.AddRequiredError([nameof(request)], "Request is required");
+            return validationResult;
+        }
+        if (request.Category == null)
+        {
+            validationResult.AddRequiredError([nameof(request.Category)], "Category is required");
+            return validationResult;
+        }
+
+        var categoryValidationResult = await _categoryValidator.ValidateCreateAsync(request.Category, cancellationToken);
+
+        if (!categoryValidationResult.IsValid)
+        {
+            validationResult = validationResult.Merge(categoryValidationResult);
+        }
+
+        return validationResult;
     }
 }

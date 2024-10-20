@@ -14,8 +14,23 @@ public class ExistsRequestValidator : IRequestValidator<CategoryExistsRequest>
         _validator = validator;
     }
 
-    public Task<ValidationResult> ValidateAsync(CategoryExistsRequest request, CancellationToken cancellationToken = default)
+    public async Task<ValidationResult> ValidateAsync(CategoryExistsRequest request, CancellationToken cancellationToken = default)
     {
-        return _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
+        var validationResult = new ValidationResult();
+
+        if (request == null)
+        {
+            validationResult.AddRequiredError([nameof(request)], "Request is required");
+            return validationResult;
+        }
+
+        var keyValidationResult = await _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
+
+        if (!keyValidationResult.IsValid)
+        {
+            validationResult = validationResult.Merge(keyValidationResult.PrependPath([nameof(request.Key)]));
+        }
+
+        return validationResult;
     }
 }

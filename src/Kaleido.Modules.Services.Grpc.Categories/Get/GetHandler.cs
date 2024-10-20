@@ -22,7 +22,7 @@ public class GetHandler : IBaseHandler<GetCategoryRequest, GetCategoryResponse>
         _logger = logger;
     }
 
-    public async Task<GetCategoryResponse> HandleAsync(GetCategoryRequest request, CancellationToken cancellationToken)
+    public async Task<GetCategoryResponse> HandleAsync(GetCategoryRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetCategory request for key: {Key}", request.Key);
 

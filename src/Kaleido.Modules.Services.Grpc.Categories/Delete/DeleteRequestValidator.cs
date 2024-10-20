@@ -15,8 +15,23 @@ public class DeleteRequestValidator : IRequestValidator<DeleteCategoryRequest>
         _validator = validator;
     }
 
-    public Task<ValidationResult> ValidateAsync(DeleteCategoryRequest request, CancellationToken cancellationToken = default)
+    public async Task<ValidationResult> ValidateAsync(DeleteCategoryRequest request, CancellationToken cancellationToken = default)
     {
-        return _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
+        var validationResult = new ValidationResult();
+
+        if (request is null)
+        {
+            validationResult.AddRequiredError([nameof(request)], "Request is required");
+            return validationResult;
+        }
+
+        var keyValidationResult = await _validator.ValidateKeyFormatAsync(request.Key, cancellationToken);
+
+        if (!keyValidationResult.IsValid)
+        {
+            validationResult = validationResult.Merge(keyValidationResult.PrependPath([nameof(request)]));
+        }
+
+        return validationResult;
     }
 }

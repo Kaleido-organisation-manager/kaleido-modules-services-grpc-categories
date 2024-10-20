@@ -16,6 +16,16 @@ public class UpdateRequestValidator : IRequestValidator<UpdateCategoryRequest>
 
     public Task<ValidationResult> ValidateAsync(UpdateCategoryRequest request, CancellationToken cancellationToken = default)
     {
+        if (request is null)
+        {
+            return Task.FromResult(new ValidationResult().AddInvalidFormatError([], "Request is required"));
+        }
+
+        if (request.Category is null)
+        {
+            return Task.FromResult(new ValidationResult().AddInvalidFormatError([nameof(request.Category)], "Category is required"));
+        }
+
         return _validator.ValidateUpdateAsync(request.Category, cancellationToken);
     }
 }
