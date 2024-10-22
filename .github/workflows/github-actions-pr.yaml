@@ -1,0 +1,172 @@
+name: CI Pipeline on Pull Request
+
+'on': pull_request
+
+jobs:
+  gitversion:
+    name: GitVersion
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.Semver.outputs.MajorMinorPatch }}
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+        with:
+          fetch-depth: 0
+      - uses: gittools/actions/gitversion/setup@v3.0.0
+      - id: Semver
+        uses: gittools/actions/gitversion/execute@v3.0.0
+
+  build-categories-service:
+    name: Build Categories Service
+    needs: gitversion
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of categories service
+        run: dotnet restore 
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories
+      - name: Build categories service
+        run: dotnet build
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories
+
+  build-categories-service-migrations:
+    name: Build Categories Service Migrations
+    needs: gitversion
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of categories service migrations
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Migrations
+      - name: Build categories service migrations
+        run: dotnet build
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Migrations
+
+  build-categories-service-client:
+    name: Build Categories Service Client
+    needs: gitversion
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of categories service client
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Client
+      - name: Build categories service client
+        run: dotnet build
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Client
+
+  unit-tests:
+    name: Run Unit Tests
+    needs: [build-categories-service, build-categories-service-migrations, build-categories-service-client]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of unit tests
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Tests.Unit
+      - name: Run unit tests
+        run: dotnet test
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Tests.Unit
+
+  create-service-release:
+    name: Create Dotnet Release for service
+    runs-on: ubuntu-latest
+    needs: [build-categories-service, build-categories-service-migrations, build-categories-service-client, gitversion]
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of service
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories
+      - name: Build service Release
+        run: dotnet build -c Release
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories
+      - name: Upload Dotnet Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: categories-service
+          path: src/Kaleido.Modules.Services.Grpc.Categories/bin/Release/net8.0
+
+  create-migrations-release:
+    name: Create Dotnet Release for migrations
+    runs-on: ubuntu-latest
+    needs: [build-categories-service, build-categories-service-migrations, build-categories-service-client, gitversion]
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of migrations
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Migrations
+      - name: Build migrations
+        run: dotnet build -c Release
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Migrations
+      - name: Upload Dotnet Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: categories-service-migrations
+          path: src/Kaleido.Modules.Services.Grpc.Categories.Migrations/bin/Release/net8.0
+
+  integration-tests:
+    name: Run Integration Tests
+    needs: [create-service-release, create-migrations-release, gitversion]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+      - name: Add Github nugetfeed
+        run: dotnet nuget add source --username DriesDelanghe --password ${{ secrets.NUGET_GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/Kaleido-organisation-manager/index.json"
+      - name: Restore dependencies of integration tests
+        run: dotnet restore
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations
+      - name: Download Service Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: categories-service
+          path: service/out
+      - name: Download Migrations Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: categories-service-migrations
+          path: migrations/out
+      - name: Build Product Service Docker Image
+        run: docker build . -f dockerfiles/Grpc.Categories/Dockerfile.cicd -t kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }} --build-arg RELEASE_DIR=service/out
+      - name: Build Migrations Docker Image
+        run: docker build . -f dockerfiles/Grpc.Categories.Migrations/Dockerfile.cicd -t kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }} --build-arg RELEASE_DIR=migrations/out
+      - name: Run integration tests
+        run: dotnet test
+        working-directory: src/Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations
+        env:
+          CATEGORIES_IMAGE_NAME: kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }}
+          MIGRATIONS_IMAGE_NAME: kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }}
+          CI: true

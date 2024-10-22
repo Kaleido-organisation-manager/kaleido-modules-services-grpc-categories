@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+
+message CategoryExistsRequest {
+    string key = 1;
+}
+
+message CategoryExistsResponse {
+    bool exists = 1;
+}
