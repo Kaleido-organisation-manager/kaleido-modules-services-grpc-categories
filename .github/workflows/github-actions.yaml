@@ -165,7 +165,7 @@ jobs:
         with:
           name: categories-service-migrations
           path: migrations/out
-      - name: Build Product Service Docker Image
+      - name: Build Category Service Docker Image
         run: docker build . -f dockerfiles/Grpc.Categories/Dockerfile.cicd -t kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }} --build-arg RELEASE_DIR=service/out
       - name: Build Migrations Docker Image
         run: docker build . -f dockerfiles/Grpc.Categories.Migrations/Dockerfile.cicd -t kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }} --build-arg RELEASE_DIR=migrations/out
@@ -206,12 +206,18 @@ jobs:
         with:
           name: categories-service
           path: service/out
-      - name: Build Product Service Docker Image
+      - name: Build Category Service Docker Image
         run: docker build . -f dockerfiles/Grpc.Categories/Dockerfile.cicd -t ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }} --build-arg RELEASE_DIR=service/out
       - name: Docker login
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Publish Product Service Docker Image
-        run: docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }}
+      - name: Publish Category Service Docker Image
+        run: |
+          # Push calculated tag
+          docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }}
+          
+          # Push latest tag
+          docker tag ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:${{ needs.gitversion.outputs.version }} ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:latest
+          docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories:latest
 
   build-and-push-migrations-docker-image:
     name: Build and Push Migrations Docker Image
@@ -232,7 +238,13 @@ jobs:
       - name: Docker login
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Publish Migrations Docker Image
-        run: docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }}
+        run: |
+          # Push calculated tag
+          docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }}
+          
+          # Push latest tag
+          docker tag ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories-migrations:${{ needs.gitversion.outputs.version }} ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories-migrations:latest
+          docker push ghcr.io/kaleido-organisation-manager/kaleido-modules-services-grpc-categories-migrations:latest
 
   create-client-release:
     name: Create Dotnet Release for client
