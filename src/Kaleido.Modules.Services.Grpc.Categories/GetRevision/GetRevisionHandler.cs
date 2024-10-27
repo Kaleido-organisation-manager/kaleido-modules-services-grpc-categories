@@ -1,39 +1,47 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetRevision;
 
-public class GetRevisionHandler : IBaseHandler<GetCategoryRevisionRequest, GetCategoryRevisionResponse>
+public class GetRevisionHandler : IGetRevisionHandler
 {
     private readonly IGetRevisionManager _manager;
     private readonly ILogger<GetRevisionHandler> _logger;
-    public IRequestValidator<GetCategoryRevisionRequest> Validator { get; }
+    private readonly GetCategoryRevisionRequestValidator _validator;
+    private readonly IMapper _mapper;
 
     public GetRevisionHandler(
         IGetRevisionManager manager,
         ILogger<GetRevisionHandler> logger,
-        IRequestValidator<GetCategoryRevisionRequest> validator
+        GetCategoryRevisionRequestValidator validator,
+        IMapper mapper
     )
     {
         _manager = manager;
         _logger = logger;
-        Validator = validator;
+        _validator = validator;
+        _mapper = mapper;
     }
 
-    public async Task<GetCategoryRevisionResponse> HandleAsync(GetCategoryRevisionRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryResponse> HandleAsync(GetCategoryRevisionRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetCategoryRevision request for category with key: {Key} and revision: {Revision}", request.Key, request.Revision);
 
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
-
-        CategoryRevision? categoryRevision;
+        EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>? result;
 
         try
         {
-            categoryRevision = await _manager.GetRevisionAsync(request.Key, request.Revision, cancellationToken);
+            _validator.ValidateAndThrow(request);
+            result = await _manager.GetRevisionAsync(request.Key, request.Revision, cancellationToken);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for get category revision. Key: {Key}. Revision {Revision}. Errors: {Errors}", request.Key, request.Revision, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {
@@ -41,11 +49,11 @@ public class GetRevisionHandler : IBaseHandler<GetCategoryRevisionRequest, GetCa
             throw new RpcException(new Status(StatusCode.Internal, ex.Message, ex));
         }
 
-        if (categoryRevision == null)
+        if (result == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound, "Category revision not found"));
         }
 
-        return new GetCategoryRevisionResponse { Revision = categoryRevision };
+        return _mapper.Map<CategoryResponse>(result);
     }
 }

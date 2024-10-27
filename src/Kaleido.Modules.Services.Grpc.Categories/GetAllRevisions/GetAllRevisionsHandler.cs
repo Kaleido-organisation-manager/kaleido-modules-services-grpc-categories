@@ -1,38 +1,46 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
 using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllRevisions;
 
-public class GetAllRevisionsHandler : IBaseHandler<GetAllCategoryRevisionsRequest, GetAllCategoryRevisionsResponse>
+public class GetAllRevisionsHandler : IGetAllRevisionsHandler
 {
     private readonly IGetAllRevisionsManager _manager;
     private readonly ILogger<GetAllRevisionsHandler> _logger;
-    public IRequestValidator<GetAllCategoryRevisionsRequest> Validator { get; }
+    private readonly CategoryRequestValidator _validator;
+    private readonly IMapper _mapper;
 
     public GetAllRevisionsHandler(
         IGetAllRevisionsManager manager,
         ILogger<GetAllRevisionsHandler> logger,
-        IRequestValidator<GetAllCategoryRevisionsRequest> validator
+        CategoryRequestValidator validator,
+        IMapper mapper
         )
     {
         _manager = manager;
         _logger = logger;
-        Validator = validator;
+        _validator = validator;
+        _mapper = mapper;
     }
 
-    public async Task<GetAllCategoryRevisionsResponse> HandleAsync(GetAllCategoryRevisionsRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryListResponse> HandleAsync(CategoryRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetAllRevisions request for category with key: {Key}", request.Key);
 
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
-
         try
         {
+            _validator.ValidateAndThrow(request);
             var revisions = await _manager.HandleAsync(request.Key, cancellationToken);
-            return new GetAllCategoryRevisionsResponse { Revisions = { revisions } };
+            return _mapper.Map<CategoryListResponse>(revisions);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for get all category revisions. Key: {Key}. Errors: {Errors}", request.Key, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {

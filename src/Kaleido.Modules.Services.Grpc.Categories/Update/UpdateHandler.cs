@@ -1,42 +1,44 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Update;
 
-public class UpdateHandler : IBaseHandler<UpdateCategoryRequest, UpdateCategoryResponse>
+public class UpdateHandler : IUpdateHandler
 {
     private readonly IUpdateManager _updateManager;
     private readonly ILogger<UpdateHandler> _logger;
-    public IRequestValidator<UpdateCategoryRequest> Validator { get; }
+    private readonly CategoryActionValidator _validator;
+    private readonly IMapper _mapper;
 
     public UpdateHandler(
         IUpdateManager updateManager,
         ILogger<UpdateHandler> logger,
-        IRequestValidator<UpdateCategoryRequest> validator
+        CategoryActionValidator validator,
+        IMapper mapper
     )
     {
         _updateManager = updateManager;
         _logger = logger;
-        Validator = validator;
+        _validator = validator;
+        _mapper = mapper;
     }
 
-    public async Task<UpdateCategoryResponse> HandleAsync(UpdateCategoryRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryResponse> HandleAsync(CategoryActionRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling UpdateCategory request with key: {Key}", request.Key);
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        if (!request.Key.Equals(request.Category.Key))
-        {
-            validationResult.AddInvalidFormatError([nameof(request.Key)], "Key in request does not match key in category");
-        }
-        validationResult.ThrowIfInvalid();
 
-        Category? updatedCategory;
+        EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>? updateResult;
 
         try
         {
-            updatedCategory = await _updateManager.UpdateAsync(request.Category, cancellationToken);
+            _validator.ValidateAndThrow(request);
+            var category = _mapper.Map<CategoryEntity>(request.Category);
+            updateResult = await _updateManager.UpdateAsync(Guid.Parse(request.Key), category, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -44,11 +46,11 @@ public class UpdateHandler : IBaseHandler<UpdateCategoryRequest, UpdateCategoryR
             throw new RpcException(new Status(StatusCode.Internal, ex.Message, ex));
         }
 
-        if (updatedCategory == null)
+        if (updateResult == null)
         {
             throw new RpcException(new Status(StatusCode.NotFound, $"Category with key {request.Key} not found"));
         }
 
-        return new UpdateCategoryResponse { Category = updatedCategory };
+        return _mapper.Map<CategoryResponse>(updateResult);
     }
 }

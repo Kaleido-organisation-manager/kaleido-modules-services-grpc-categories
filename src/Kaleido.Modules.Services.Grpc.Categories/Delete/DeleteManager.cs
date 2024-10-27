@@ -1,28 +1,32 @@
+using AutoMapper;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Delete;
 
 public class DeleteManager : IDeleteManager
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IEntityLifecycleHandler<CategoryEntity> _categoryLifeCycleHandler;
     private readonly ILogger<DeleteManager> _logger;
+    private readonly IMapper _mapper;
 
     public DeleteManager(
-        ICategoryRepository categoryRepository,
-        ILogger<DeleteManager> logger
+        IEntityLifecycleHandler<CategoryEntity> categoryLifeCycleHandler,
+        ILogger<DeleteManager> logger,
+        IMapper mapper
         )
     {
-        _categoryRepository = categoryRepository;
+        _categoryLifeCycleHandler = categoryLifeCycleHandler;
         _logger = logger;
+        _mapper = mapper;
     }
 
-    public async Task<CategoryEntity?> DeleteCategoryAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> DeleteCategoryAsync(string key, CancellationToken cancellationToken = default)
     {
         var categoryKey = Guid.Parse(key);
         _logger.LogInformation("Deleting category with key: {CategoryKey}", categoryKey);
-        var deletedEntity = await _categoryRepository.DeleteAsync(categoryKey, cancellationToken);
-
-        return deletedEntity;
+        return await _categoryLifeCycleHandler.DeleteAsync(categoryKey, cancellationToken);
     }
 }

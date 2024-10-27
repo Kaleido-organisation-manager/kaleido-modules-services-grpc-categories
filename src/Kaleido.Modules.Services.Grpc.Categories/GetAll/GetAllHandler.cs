@@ -1,38 +1,34 @@
+using AutoMapper;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAll;
 
-public class GetAllHandler : IBaseHandler<GetAllCategoriesRequest, GetAllCategoriesResponse>
+public class GetAllHandler : IGetAllHandler
 {
     private readonly IGetAllManager _manager;
     private readonly ILogger<GetAllHandler> _logger;
-    public IRequestValidator<GetAllCategoriesRequest> Validator { get; }
+    private readonly IMapper _mapper;
 
     public GetAllHandler(
         IGetAllManager manager,
         ILogger<GetAllHandler> logger,
-        IRequestValidator<GetAllCategoriesRequest> validator
+        IMapper mapper
     )
     {
         _manager = manager;
         _logger = logger;
-        Validator = validator;
+        _mapper = mapper;
     }
 
-    public async Task<GetAllCategoriesResponse> HandleAsync(GetAllCategoriesRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryListResponse> HandleAsync(EmptyRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetAllCategories request");
 
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
-
         try
         {
-            var categories = await _manager.GetAllAsync(cancellationToken);
-            return new GetAllCategoriesResponse { Categories = { categories.ToList() } };
+            var result = await _manager.GetAllAsync(cancellationToken);
+            return _mapper.Map<CategoryListResponse>(result);
         }
         catch (Exception ex)
         {

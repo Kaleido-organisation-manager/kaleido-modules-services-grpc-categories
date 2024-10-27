@@ -1,42 +1,52 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Create;
 
-public class CreateHandler : IBaseHandler<CreateCategoryRequest, CreateCategoryResponse>
+public class CreateHandler : ICreateHandler
 {
     private readonly ICreateManager _createManager;
     private readonly ILogger<CreateHandler> _logger;
-    public IRequestValidator<CreateCategoryRequest> Validator { get; }
+    private readonly IMapper _mapper;
+    public readonly CategoryValidator _validator;
 
     public CreateHandler(
         ICreateManager createManager,
         ILogger<CreateHandler> logger,
-        IRequestValidator<CreateCategoryRequest> validator)
+        IMapper mapper,
+        CategoryValidator validator
+        )
     {
         _createManager = createManager;
         _logger = logger;
-        Validator = validator;
+        _mapper = mapper;
+        _validator = validator;
     }
 
-    public async Task<CreateCategoryResponse> HandleAsync(CreateCategoryRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryResponse> HandleAsync(Category request, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Handling CreateCategory request for name: {Name}", request.Category.Name);
-
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
+        _logger.LogInformation("Handling CreateCategory request for name: {Name}", request.Name);
 
         try
         {
-            var category = await _createManager.CreateAsync(request.Category, cancellationToken);
+            _validator.ValidateAndThrow(request);
+            var category = _mapper.Map<CategoryEntity>(request);
+            var result = await _createManager.CreateAsync(category, cancellationToken);
 
-            return new CreateCategoryResponse { Category = category };
+            return _mapper.Map<CategoryResponse>(result);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for category with name: {Name}. Errors: {Errors}", request.Name, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occured while creating category with name: {Name}", request.Category.Name);
+            _logger.LogError(ex, "An error occured while creating category with name: {Name}", request.Name);
             throw new RpcException(new Status(StatusCode.Internal, ex.Message, ex));
         }
     }

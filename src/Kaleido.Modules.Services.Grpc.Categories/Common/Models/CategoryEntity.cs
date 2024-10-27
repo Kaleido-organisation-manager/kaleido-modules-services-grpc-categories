@@ -6,7 +6,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 public class CategoryEntity : BaseEntity
 {
-    public required string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     public override bool Equals(object? obj)
     {

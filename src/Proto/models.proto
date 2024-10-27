@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package Kaleido.Grpc.Categories;
+  
+message Category {
+    string name = 1;
+}
+
+message CategoryRequest {
+    string key = 1;
+}
+
+message CategoryActionRequest {
+    string key = 1;
+    Category category = 2;
+}
+
+message EmptyRequest {}
+
+message CategoryRevision {
+    string key = 1;
+    int32 revision = 2;
+    string action = 3;
+    string createdAt = 4;
+}
+
+message CategoryResponse {
+    string key = 1;
+    Category category = 2;
+    CategoryRevision revision = 3;
+}
+
+message CategoryListResponse {
+    repeated CategoryResponse categories = 1;
+}
+
+message GetAllCategoriesByNameRequest {
+    string name = 1;
+}
+
+message GetCategoryRevisionRequest {
+    string key = 1;
+    int32 revision = 2;
+}
+

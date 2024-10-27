@@ -1,32 +1,27 @@
-using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllRevisions;
 
 public class GetAllRevisionsManager : IGetAllRevisionsManager
 {
-    private readonly ICategoryRepository _repository;
+    private readonly IEntityLifecycleHandler<CategoryEntity> _lifeCycleHandler;
     private readonly ILogger<GetAllRevisionsManager> _logger;
-    private readonly ICategoryMapper _mapper;
 
     public GetAllRevisionsManager(
-        ICategoryRepository repository,
-        ILogger<GetAllRevisionsManager> logger,
-        ICategoryMapper mapper
+        IEntityLifecycleHandler<CategoryEntity> lifeCycleHandler,
+        ILogger<GetAllRevisionsManager> logger
         )
     {
-        _repository = repository;
+        _lifeCycleHandler = lifeCycleHandler;
         _logger = logger;
-        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<CategoryRevision>> HandleAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>> HandleAsync(string key, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("getting all revisions for category with key: {Key}", key);
         var categoryKey = Guid.Parse(key);
-        var revisions = await _repository.GetAllRevisionsAsync(categoryKey, cancellationToken);
-
-        return revisions.Select(_mapper.ToCategoryRevision).ToList();
+        return await _lifeCycleHandler.GetAllAsync(categoryKey, cancellationToken);
     }
 }
