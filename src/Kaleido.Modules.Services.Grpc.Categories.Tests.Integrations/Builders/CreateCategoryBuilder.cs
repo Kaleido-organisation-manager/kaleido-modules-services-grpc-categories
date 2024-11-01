@@ -4,7 +4,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
 
 public class CreateCategoryBuilder
 {
-    private readonly CreateCategory _instance = new()
+    private readonly Category _instance = new()
     {
         Name = "Test Category"
     };
@@ -15,5 +15,5 @@ public class CreateCategoryBuilder
         return this;
     }
 
-    public CreateCategory Build() => _instance;
+    public Category Build() => _instance;
 }

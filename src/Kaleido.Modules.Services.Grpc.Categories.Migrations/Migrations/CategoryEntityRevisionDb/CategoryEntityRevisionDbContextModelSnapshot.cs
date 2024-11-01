@@ -8,45 +8,47 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
+namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations.CategoryEntityRevisionDb
 {
-    [DbContext(typeof(CategoryDbContext))]
-    partial class CategoryDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(CategoryEntityRevisionDbContext))]
+    partial class CategoryEntityRevisionDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.8")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Kaleido.Modules.Services.Grpc.Categories.Common.Models.CategoryEntity", b =>
+            modelBuilder.Entity("Kaleido.Common.Services.Grpc.Models.BaseRevisionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("varchar(8)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("Key")
+                    b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Key")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("varchar(36)");
 
                     b.Property<int>("Revision")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.HasIndex("Key");
+
+                    b.ToTable("CategoryRevisions", (string)null);
                 });
 #pragma warning restore 612, 618
         }

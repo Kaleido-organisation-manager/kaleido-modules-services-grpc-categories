@@ -19,15 +19,15 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetCategoryRevision_ShouldReturnCategory_WhenCategoryExists()
     {
         var createCategory = new CreateCategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory });
+        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Category.Key, Revision = 1 };
+        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 1 };
         var response = await _fixture.Client.GetCategoryRevisionAsync(request);
 
         Assert.NotNull(response.Revision);
-        Assert.Equal(createResponse.Category.Key, response.Revision.Key);
+        Assert.Equal(createResponse.Key, response.Revision.Key);
         Assert.Equal(1, response.Revision.Revision);
-        Assert.Equal("Active", response.Revision.Status);
+        Assert.Equal("Created", response.Revision.Action);
     }
 
     [Fact]
@@ -43,9 +43,9 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetCategoryRevision_ShouldReturnNotFound_WhenRevisionDoesNotExist()
     {
         var createCategory = new CreateCategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory });
+        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Category.Key, Revision = 2 };
+        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 2 };
         var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetCategoryRevisionAsync(request));
         Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
     }
@@ -54,20 +54,19 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetCategoryRevision_ShouldReturnArchived_WhenCategoryHasBeenArchived()
     {
         var createCategory = new CreateCategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory });
+        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
         var updatedCategory = new CategoryBuilder()
-            .WithKey(createResponse.Category.Key)
             .WithName(createResponse.Category.Name + " - Updated")
             .Build();
 
-        await _fixture.Client.UpdateCategoryAsync(new UpdateCategoryRequest { Key = createResponse.Category.Key, Category = updatedCategory });
+        await _fixture.Client.UpdateCategoryAsync(new CategoryActionRequest { Key = createResponse.Key, Category = updatedCategory });
 
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Category.Key, Revision = 1 };
+        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 1 };
         var response = await _fixture.Client.GetCategoryRevisionAsync(request);
 
         Assert.NotNull(response.Revision);
-        Assert.Equal("Archived", response.Revision.Status);
+        Assert.Equal("Created", response.Revision.Action);
         Assert.Equal(1, response.Revision.Revision);
     }
 
@@ -75,17 +74,17 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetCategoryRevision_ShouldReturnDeleted_WhenCategoryHasBeenDeleted()
     {
         var createCategory = new CreateCategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory });
+        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
-        var request = new DeleteCategoryRequest { Key = createResponse.Category.Key };
+        var request = new CategoryRequest { Key = createResponse.Key };
         await _fixture.Client.DeleteCategoryAsync(request);
 
-        var getRequest = new GetCategoryRevisionRequest { Key = createResponse.Category.Key, Revision = 1 };
+        var getRequest = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 2 };
         var response = await _fixture.Client.GetCategoryRevisionAsync(getRequest);
 
         Assert.NotNull(response.Revision);
-        Assert.Equal("Deleted", response.Revision.Status);
-        Assert.Equal(1, response.Revision.Revision);
+        Assert.Equal("Deleted", response.Revision.Action);
+        Assert.Equal(2, response.Revision.Revision);
     }
 }
 

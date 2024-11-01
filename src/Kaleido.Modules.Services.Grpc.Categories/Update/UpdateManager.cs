@@ -1,3 +1,4 @@
+using Kaleido.Common.Services.Grpc.Exceptions;
 using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
 using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
@@ -8,11 +9,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Update;
 public class UpdateManager : IUpdateManager
 {
 
-    private readonly IEntityLifecycleHandler<CategoryEntity> _lifeCycleHandler;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _lifeCycleHandler;
     private readonly ILogger<UpdateManager> _logger;
 
     public UpdateManager(
-        IEntityLifecycleHandler<CategoryEntity> lifecycleHandler,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> lifecycleHandler,
         ILogger<UpdateManager> logger
     )
     {
@@ -24,6 +25,13 @@ public class UpdateManager : IUpdateManager
     {
         _logger.LogInformation("Updating category with key: {Key}", key);
 
-        return await _lifeCycleHandler.UpdateAsync(key, category, cancellationToken);
+        try
+        {
+            return await _lifeCycleHandler.UpdateAsync(key, category, cancellationToken);
+        }
+        catch (RevisionNotFoundException)
+        {
+            return null;
+        }
     }
 }

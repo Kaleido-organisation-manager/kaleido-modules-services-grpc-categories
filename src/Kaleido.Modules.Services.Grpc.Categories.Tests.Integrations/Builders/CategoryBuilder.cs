@@ -6,15 +6,8 @@ public class CategoryBuilder
 {
     private readonly Category _category = new()
     {
-        Key = Guid.NewGuid().ToString(),
         Name = "Test Category",
     };
-
-    public CategoryBuilder WithKey(string key)
-    {
-        _category.Key = key;
-        return this;
-    }
 
     public CategoryBuilder WithName(string name)
     {

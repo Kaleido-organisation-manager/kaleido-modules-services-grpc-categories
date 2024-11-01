@@ -1,3 +1,4 @@
+using Kaleido.Common.Services.Grpc.Constants;
 using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
 using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
@@ -7,11 +8,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.GetAll;
 
 public class GetAllManager : IGetAllManager
 {
-    private readonly IEntityLifecycleHandler<CategoryEntity> _categoryLifeCycleHandler;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _categoryLifeCycleHandler;
     private readonly ILogger<GetAllManager> _logger;
 
     public GetAllManager(
-        IEntityLifecycleHandler<CategoryEntity> repository,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> repository,
          ILogger<GetAllManager> logger
          )
     {
@@ -22,6 +23,7 @@ public class GetAllManager : IGetAllManager
     public async Task<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Getting all active categories");
-        return await _categoryLifeCycleHandler.GetAllAsync(cancellationToken: cancellationToken);
+        var categories = await _categoryLifeCycleHandler.GetAllAsync(cancellationToken: cancellationToken);
+        return categories.Where(c => c.Revision.Action != RevisionAction.Deleted);
     }
 }

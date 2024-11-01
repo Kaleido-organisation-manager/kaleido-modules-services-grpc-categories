@@ -30,7 +30,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
     {
         // Arrange
         var category = new CreateCategoryBuilder().WithName("Test").Build();
-        await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = category });
+        await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
         var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "Test" });
@@ -52,7 +52,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
 
         foreach (var category in categories)
         {
-            await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = category });
+            await _fixture.Client.CreateCategoryAsync(category);
         }
 
         // Act
@@ -77,7 +77,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
     {
         // Arrange
         var category = new CreateCategoryBuilder().WithName("Test").Build();
-        await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = category });
+        await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
         var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "NonMatch" });
@@ -91,7 +91,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
     {
         // Arrange
         var category = new CreateCategoryBuilder().WithName("Test").Build();
-        await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = category });
+        await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
         var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "test" });

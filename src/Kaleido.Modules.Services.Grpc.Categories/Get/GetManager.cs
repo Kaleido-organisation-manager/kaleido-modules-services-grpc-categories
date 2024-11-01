@@ -10,12 +10,12 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Get;
 public class GetManager : IGetManager
 {
     private readonly IMapper _mapper;
-    private readonly IEntityLifecycleHandler<CategoryEntity> _categoryLifeCycleHandler;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _categoryLifeCycleHandler;
     private readonly ILogger<GetManager> _logger;
 
     public GetManager(
         IMapper mapper,
-        IEntityLifecycleHandler<CategoryEntity> categoryLifeCycleHandler,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> categoryLifeCycleHandler,
         ILogger<GetManager> logger
     )
     {

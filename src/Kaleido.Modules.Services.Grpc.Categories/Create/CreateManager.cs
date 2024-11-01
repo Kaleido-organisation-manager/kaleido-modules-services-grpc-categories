@@ -9,11 +9,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Create;
 
 public class CreateManager : ICreateManager
 {
-    private readonly IEntityLifecycleHandler<CategoryEntity> _categoryLifeCycleHandler;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _categoryLifeCycleHandler;
     private readonly ILogger<CreateManager> _logger;
 
     public CreateManager(
-        IEntityLifecycleHandler<CategoryEntity> categoryRepository,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> categoryRepository,
         ILogger<CreateManager> logger
         )
     {

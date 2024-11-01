@@ -6,11 +6,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.GetRevision;
 
 public class GetRevisionManager : IGetRevisionManager
 {
-    private readonly IEntityLifecycleHandler<CategoryEntity> _lifeCycleHandler;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _lifeCycleHandler;
     private readonly ILogger<GetRevisionManager> _logger;
 
     public GetRevisionManager(
-        IEntityLifecycleHandler<CategoryEntity> lifecycleHandler,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> lifecycleHandler,
         ILogger<GetRevisionManager> logger
     )
     {

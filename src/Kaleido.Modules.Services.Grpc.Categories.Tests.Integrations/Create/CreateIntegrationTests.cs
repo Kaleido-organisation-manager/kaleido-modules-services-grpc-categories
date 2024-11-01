@@ -19,8 +19,7 @@ public class CreateIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task Create_WithValidRequest_ReturnsSuccessResponse()
     {
         // Arrange
-        var createCategory = new CreateCategoryBuilder().WithName("Test Category").Build();
-        var request = new CreateCategoryRequest { Category = createCategory };
+        var request = new CategoryBuilder().WithName("Test Category").Build();
 
         // Act
         var response = await _fixture.Client.CreateCategoryAsync(request);
@@ -28,34 +27,36 @@ public class CreateIntegrationTests : IClassFixture<InfrastructureFixture>
         // Assert
         Assert.NotNull(response);
         Assert.NotNull(response.Category);
-        Assert.Equal(createCategory.Name, response.Category.Name);
+        Assert.Equal(request.Name, response.Category.Name);
+        Assert.Equal(1, response.Revision.Revision);
+        Assert.Equal(response.Key, response.Key);
     }
 
     [Fact]
     public async Task Create_WithValidRequest_ShouldPersist()
     {
         // Arrange
-        var createCategory = new CreateCategoryBuilder().WithName("Test Category").Build();
-        var request = new CreateCategoryRequest { Category = createCategory };
+        var request = new CategoryBuilder().WithName("Test Category").Build();
 
         // Act
         var response = await _fixture.Client.CreateCategoryAsync(request);
-        var category = await _fixture.Client.GetCategoryAsync(new GetCategoryRequest { Key = response.Category.Key });
+        var category = await _fixture.Client.GetCategoryAsync(new CategoryRequest { Key = response.Key });
 
         // Assert
         Assert.NotNull(category);
-        Assert.Equal(createCategory.Name, category.Category.Name);
+        Assert.Equal(request.Name, category.Category.Name);
+        Assert.Equal(1, response.Revision.Revision);
+        Assert.Equal(response.Key, category.Key);
     }
 
     [Fact]
     public async Task Create_WithInvalidRequest_ReturnsErrorResponse()
     {
         // Arrange
-        var createCategory = new CreateCategoryBuilder().WithName("").Build();
-        var request = new CreateCategoryRequest { Category = createCategory };
+        var createCategory = new CategoryBuilder().WithName("").Build();
 
         // Act && Assert
-        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.CreateCategoryAsync(request));
+        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.CreateCategoryAsync(createCategory));
 
         Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
     }

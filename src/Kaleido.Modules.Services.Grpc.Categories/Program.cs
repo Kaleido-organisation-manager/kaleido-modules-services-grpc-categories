@@ -1,4 +1,8 @@
+using Kaleido.Common.Services.Grpc.Configuration.Extensions;
+using Kaleido.Common.Services.Grpc.Repositories.Extensions;
 using Kaleido.Common.Services.Grpc.Handlers.Extensions;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Configuration;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Services;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
@@ -28,7 +32,14 @@ if (string.IsNullOrEmpty(categoriesConnectionString))
 {
     throw new ArgumentNullException(nameof(categoriesConnectionString), "No connection string found to connect to the categories database");
 }
-builder.Services.AddLifeCycleHandler<CategoryEntity>(categoriesConnectionString, [entity => entity.Property(c => c.Name).IsRequired().HasColumnType("varchar(100)")]);
+// builder.Services.AddLifeCycleHandler(categoriesConnectionString, EntityTypeBuilders.CategoryEntityTypeBuilders, EntityTypeBuilders.BaseRevisionEntityTypeBuilders);
+
+builder.Services.AddKaleidoEntityDbContext<CategoryEntity, CategoryEntityDbContext>(categoriesConnectionString);
+builder.Services.AddKaleidoRevisionDbContext<BaseRevisionEntity, CategoryEntityRevisionDbContext>(categoriesConnectionString);
+builder.Services.AddEntityRepository<CategoryEntity, CategoryEntityDbContext>();
+builder.Services.AddRevisionRepository<CategoryEntityRevisionDbContext>();
+builder.Services.AddLifeCycleHandler<CategoryEntity>();
+
 
 // Create
 // builder.Services.AddScoped<IBaseHandler<CreateCategoryRequest, CreateCategoryResponse>, CreateHandler>();

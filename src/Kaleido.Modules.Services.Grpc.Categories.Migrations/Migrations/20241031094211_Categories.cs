@@ -16,11 +16,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "varchar(100)", nullable: false),
-                    Key = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Revision = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false)
+                    Name = table.Column<string>(type: "varchar(100)", nullable: false)
                 },
                 constraints: table =>
                 {
