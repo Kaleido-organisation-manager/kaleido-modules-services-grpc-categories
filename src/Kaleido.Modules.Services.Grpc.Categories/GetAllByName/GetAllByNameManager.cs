@@ -1,31 +1,28 @@
-using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
+using Kaleido.Common.Services.Grpc.Constants;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
 public class GetAllByNameManager : IGetAllByNameManager
 {
-    private readonly ICategoryRepository _repository;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _lifeCycleHandler;
     private readonly ILogger<GetAllByNameManager> _logger;
-    private readonly ICategoryMapper _mapper;
 
     public GetAllByNameManager(
-        ICategoryRepository repository,
-        ILogger<GetAllByNameManager> logger,
-        ICategoryMapper mapper
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> repository,
+        ILogger<GetAllByNameManager> logger
         )
     {
-        _repository = repository;
+        _lifeCycleHandler = repository;
         _logger = logger;
-        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<Category>> GetAllByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>> GetAllByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Getting all categories by name: {name}", name);
-        var categories = await _repository.GetAllByNameAsync(name, cancellationToken);
-
-        return categories.Select(_mapper.ToCategory).ToList();
+        var matchingCategories = await _lifeCycleHandler.FindAllAsync((x) => x.Name.ToLower().Contains(name.ToLower()), cancellationToken: cancellationToken);
+        return matchingCategories.Where(c => c.Revision.Action != RevisionAction.Deleted);
     }
 }

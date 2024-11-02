@@ -2,9 +2,16 @@ using Moq;
 using Moq.AutoMock;
 using Xunit;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Services;
+using Kaleido.Modules.Services.Grpc.Categories.Create;
+using Kaleido.Modules.Services.Grpc.Categories.Delete;
+using Kaleido.Modules.Services.Grpc.Categories.Get;
+using Kaleido.Modules.Services.Grpc.Categories.GetAll;
+using Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
+using Kaleido.Modules.Services.Grpc.Categories.GetAllRevisions;
+using Kaleido.Modules.Services.Grpc.Categories.GetRevision;
+using Kaleido.Modules.Services.Grpc.Categories.Update;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Common.Services;
 
@@ -23,14 +30,14 @@ public class CategoryServiceTests
     public async Task CreateCategory_CallsHandleAsyncOnCreateHandler()
     {
         // Arrange
-        var request = new CreateCategoryRequest();
+        var request = new Category();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.CreateCategory(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<CreateCategoryRequest, CreateCategoryResponse>>()
+        _mocker.GetMock<ICreateHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -38,29 +45,14 @@ public class CategoryServiceTests
     public async Task DeleteCategory_CallsHandleAsyncOnDeleteHandler()
     {
         // Arrange
-        var request = new DeleteCategoryRequest();
+        var request = new CategoryRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.DeleteCategory(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<DeleteCategoryRequest, DeleteCategoryResponse>>()
-            .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task CategoryExists_CallsHandleAsyncOnExistsHandler()
-    {
-        // Arrange
-        var request = new CategoryExistsRequest();
-        var context = new Mock<ServerCallContext>().Object;
-
-        // Act
-        await _sut.CategoryExists(request, context);
-
-        // Assert
-        _mocker.GetMock<IBaseHandler<CategoryExistsRequest, CategoryExistsResponse>>()
+        _mocker.GetMock<IDeleteHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -68,14 +60,14 @@ public class CategoryServiceTests
     public async Task GetCategory_CallsHandleAsyncOnGetHandler()
     {
         // Arrange
-        var request = new GetCategoryRequest();
+        var request = new CategoryRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.GetCategory(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<GetCategoryRequest, GetCategoryResponse>>()
+        _mocker.GetMock<IGetHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -83,14 +75,14 @@ public class CategoryServiceTests
     public async Task GetAllCategories_CallsHandleAsyncOnGetAllHandler()
     {
         // Arrange
-        var request = new GetAllCategoriesRequest();
+        var request = new EmptyRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.GetAllCategories(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<GetAllCategoriesRequest, GetAllCategoriesResponse>>()
+        _mocker.GetMock<IGetAllHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -105,7 +97,7 @@ public class CategoryServiceTests
         await _sut.GetAllCategoriesByName(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<GetAllCategoriesByNameRequest, GetAllCategoriesByNameResponse>>()
+        _mocker.GetMock<IGetAllByNameHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -113,14 +105,14 @@ public class CategoryServiceTests
     public async Task GetAllCategoryRevisions_CallsHandleAsyncOnGetAllRevisionsHandler()
     {
         // Arrange
-        var request = new GetAllCategoryRevisionsRequest();
+        var request = new CategoryRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.GetAllCategoryRevisions(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<GetAllCategoryRevisionsRequest, GetAllCategoryRevisionsResponse>>()
+        _mocker.GetMock<IGetAllRevisionsHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -135,7 +127,7 @@ public class CategoryServiceTests
         await _sut.GetCategoryRevision(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<GetCategoryRevisionRequest, GetCategoryRevisionResponse>>()
+        _mocker.GetMock<IGetRevisionHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -143,14 +135,14 @@ public class CategoryServiceTests
     public async Task UpdateCategory_CallsHandleAsyncOnUpdateHandler()
     {
         // Arrange
-        var request = new UpdateCategoryRequest();
+        var request = new CategoryActionRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
         await _sut.UpdateCategory(request, context);
 
         // Assert
-        _mocker.GetMock<IBaseHandler<UpdateCategoryRequest, UpdateCategoryResponse>>()
+        _mocker.GetMock<IUpdateHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

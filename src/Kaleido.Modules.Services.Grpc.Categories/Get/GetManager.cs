@@ -1,35 +1,37 @@
+using AutoMapper;
+using Kaleido.Common.Services.Grpc.Constants;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Validators.Interfaces;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Get;
 
 public class GetManager : IGetManager
 {
-    private readonly ICategoryMapper _mapper;
-    private readonly ICategoryRepository _repository;
+    private readonly IMapper _mapper;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _categoryLifeCycleHandler;
     private readonly ILogger<GetManager> _logger;
 
     public GetManager(
-        ICategoryMapper mapper,
-        ICategoryRepository repository,
+        IMapper mapper,
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> categoryLifeCycleHandler,
         ILogger<GetManager> logger
     )
     {
         _mapper = mapper;
-        _repository = repository;
+        _categoryLifeCycleHandler = categoryLifeCycleHandler;
         _logger = logger;
     }
 
-    public async Task<Category?> GetAsync(string key, CancellationToken cancellationToken = default)
+    public async Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Getting category with key: {Key}", key);
-        var categoryEntity = await _repository.GetActiveAsync(Guid.Parse(key), cancellationToken);
-        if (categoryEntity == null)
+        var result = await _categoryLifeCycleHandler.GetAsync(Guid.Parse(key), cancellationToken: cancellationToken);
+        if (result == null || result.Revision.Action == RevisionAction.Deleted)
         {
             return null;
         }
-        return _mapper.ToCategory(categoryEntity);
+        return result;
     }
 }

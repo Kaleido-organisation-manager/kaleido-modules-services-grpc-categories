@@ -28,11 +28,11 @@ public class GetAllIntegrationTests : IClassFixture<InfrastructureFixture>
 
         foreach (var createCategory in createCategories)
         {
-            await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory.Build() });
+            await _fixture.Client.CreateCategoryAsync(createCategory.Build());
         }
 
         // Act
-        var getAllResponse = await _fixture.Client.GetAllCategoriesAsync(new GetAllCategoriesRequest());
+        var getAllResponse = await _fixture.Client.GetAllCategoriesAsync(new EmptyRequest());
 
         // Assert
         Assert.Equal(createCategories.Count, getAllResponse.Categories.Count);
@@ -42,7 +42,7 @@ public class GetAllIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetAll_WithNoCategories_ShouldReturnEmptyList()
     {
         // Act
-        var getAllResponse = await _fixture.Client.GetAllCategoriesAsync(new GetAllCategoriesRequest());
+        var getAllResponse = await _fixture.Client.GetAllCategoriesAsync(new EmptyRequest());
 
         // Assert
         Assert.Empty(getAllResponse.Categories);

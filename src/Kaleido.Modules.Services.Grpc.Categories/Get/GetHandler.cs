@@ -1,39 +1,48 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Get;
 
-public class GetHandler : IBaseHandler<GetCategoryRequest, GetCategoryResponse>
+public class GetHandler : IGetHandler
 {
     private readonly IGetManager _manager;
-    public IRequestValidator<GetCategoryRequest> Validator { get; }
     private readonly ILogger<GetHandler> _logger;
+    public readonly CategoryRequestValidator _validator;
+    public readonly IMapper _mapper;
 
     public GetHandler(
         IGetManager manager,
-        IRequestValidator<GetCategoryRequest> validator,
-        ILogger<GetHandler> logger
+        CategoryRequestValidator validator,
+        ILogger<GetHandler> logger,
+        IMapper mapper
     )
     {
         _manager = manager;
-        Validator = validator;
+        _validator = validator;
         _logger = logger;
+        _mapper = mapper;
     }
 
-    public async Task<GetCategoryResponse> HandleAsync(GetCategoryRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryResponse> HandleAsync(CategoryRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetCategory request for key: {Key}", request.Key);
 
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
-
-        Category? category;
+        EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>? category;
 
         try
         {
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             category = await _manager.GetAsync(request.Key, cancellationToken);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for get category. Key: {Key}. Errors: {Errors}", request.Key, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {
@@ -43,9 +52,10 @@ public class GetHandler : IBaseHandler<GetCategoryRequest, GetCategoryResponse>
 
         if (category == null)
         {
+            _logger.LogWarning("Category with key {Key} not found", request.Key);
             throw new RpcException(new Status(StatusCode.NotFound, "Category not found"));
         }
 
-        return new GetCategoryResponse { Category = category };
+        return _mapper.Map<CategoryResponse>(category);
     }
 }

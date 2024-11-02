@@ -1,12 +1,12 @@
 using Moq;
 using Moq.AutoMock;
-using Xunit;
 using Kaleido.Modules.Services.Grpc.Categories.Delete;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
+using AutoMapper;
+using Kaleido.Modules.Services.Grpc.Categories.Mappers;
+using Grpc.Core;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
 {
@@ -15,7 +15,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
         private readonly AutoMocker _mocker;
         private readonly DeleteManager _sut;
         private readonly Guid _categoryKey;
-        private readonly CategoryEntity _categoryEntity;
+        private readonly EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity> _categoryEntity;
 
         public DeleteManagerTests()
         {
@@ -23,17 +23,22 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
             _sut = _mocker.CreateInstance<DeleteManager>();
 
             _categoryKey = Guid.NewGuid();
-            _categoryEntity = new CategoryEntity
+            _categoryEntity = new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
             {
-                Id = Guid.NewGuid(),
-                Key = _categoryKey,
-                Name = "Test Category",
-                Revision = 1,
-                Status = Kaleido.Common.Services.Grpc.Constants.EntityStatus.Active,
-                CreatedAt = DateTime.UtcNow
+                Entity = new CategoryEntity { Name = "Test Category" },
+                Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
             };
 
-            _mocker.GetMock<ICategoryRepository>()
+            _mocker.Use(() =>
+            {
+                var mapper = new MapperConfiguration(cfg =>
+                {
+                    cfg.AddProfile<CategoryMappingProfile>();
+                });
+                return mapper.CreateMapper();
+            });
+
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
                 .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_categoryEntity);
         }
@@ -48,7 +53,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
             await _sut.DeleteCategoryAsync(key);
 
             // Assert
-            _mocker.GetMock<ICategoryRepository>()
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
                 .Verify(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -66,28 +71,13 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
         }
 
         [Fact]
-        public async Task DeleteCategoryAsync_ShouldPassCancellationTokenToRepository()
-        {
-            // Arrange
-            var key = _categoryKey.ToString();
-            var cancellationToken = new CancellationToken();
-
-            // Act
-            await _sut.DeleteCategoryAsync(key, cancellationToken);
-
-            // Assert
-            _mocker.GetMock<ICategoryRepository>()
-                .Verify(r => r.DeleteAsync(_categoryKey, cancellationToken), Times.Once);
-        }
-
-        [Fact]
         public async Task DeleteCategoryAsync_WhenRepositoryReturnsNull_ShouldReturnNull()
         {
             // Arrange
             var key = _categoryKey.ToString();
-            _mocker.GetMock<ICategoryRepository>()
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
                 .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((CategoryEntity)null!);
+                .ReturnsAsync((EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>)null!);
 
             // Act
             var result = await _sut.DeleteCategoryAsync(key);
@@ -96,19 +86,6 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
             Assert.Null(result);
         }
 
-        [Fact]
-        public async Task DeleteCategoryAsync_ShouldParseKeyCorrectly()
-        {
-            // Arrange
-            var key = _categoryKey.ToString();
-
-            // Act
-            await _sut.DeleteCategoryAsync(key);
-
-            // Assert
-            _mocker.GetMock<ICategoryRepository>()
-                .Verify(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
-        }
     }
 }
 

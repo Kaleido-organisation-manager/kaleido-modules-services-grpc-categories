@@ -1,11 +1,13 @@
 using Moq;
 using Moq.AutoMock;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Models.Validations;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 using Kaleido.Common.Services.Grpc.Exceptions;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using AutoMapper;
+using Kaleido.Modules.Services.Grpc.Categories.Mappers;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllByName
 {
@@ -14,28 +16,42 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllByName
         private readonly AutoMocker _mocker;
         private readonly GetAllByNameHandler _sut;
         private readonly GetAllCategoriesByNameRequest _validRequest;
-        private readonly List<Category> _validCategories;
+        private readonly List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>> _validCategories;
 
         public GetAllByNameHandlerTests()
         {
             _mocker = new AutoMocker();
-            _sut = _mocker.CreateInstance<GetAllByNameHandler>();
 
-            _validRequest = new GetAllCategoriesByNameRequest { Name = "Test Category" };
-            _validCategories = new List<Category>
+            _validRequest = new GetAllCategoriesByNameRequest { Name = "Test" };
+            _validCategories = new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>
             {
-                new Category { Key = "key1", Name = "Test Category 1" },
-                new Category { Key = "key2", Name = "Test Category 2" }
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Test Category 1" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                },
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Test Category 2" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                }
             };
 
             // Happy path setup
-            _mocker.GetMock<IRequestValidator<GetAllCategoriesByNameRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<GetAllCategoriesByNameRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult());
+            _mocker.Use(new GetAllByNameRequestValidator());
+
+            var mapper = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<CategoryMappingProfile>();
+            });
+
+            _mocker.Use(mapper.CreateMapper());
 
             _mocker.GetMock<IGetAllByNameManager>()
                 .Setup(m => m.GetAllByNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_validCategories);
+
+            _sut = _mocker.CreateInstance<GetAllByNameHandler>();
         }
 
         [Fact]
@@ -46,20 +62,17 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllByName
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<GetAllCategoriesByNameResponse>(result);
+            Assert.IsType<CategoryListResponse>(result);
             Assert.Equal(_validCategories.Count, result.Categories.Count);
         }
 
         [Fact]
-        public async Task HandleAsync_ValidRequest_CallsValidatorAndManager()
+        public async Task HandleAsync_ValidRequest_CallsManager()
         {
             // Act
             await _sut.HandleAsync(_validRequest);
 
             // Assert
-            _mocker.GetMock<IRequestValidator<GetAllCategoriesByNameRequest>>()
-                .Verify(v => v.ValidateAsync(_validRequest, It.IsAny<CancellationToken>()), Times.Once);
-
             _mocker.GetMock<IGetAllByNameManager>()
                 .Verify(m => m.GetAllByNameAsync(_validRequest.Name, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -68,14 +81,12 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllByName
         public async Task HandleAsync_ValidationFails_ThrowsValidationException()
         {
             // Arrange
-            var validationResult = new ValidationResult();
-            validationResult.AddInvalidFormatError(["Name"], "Invalid name format");
-            _mocker.GetMock<IRequestValidator<GetAllCategoriesByNameRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<GetAllCategoriesByNameRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(validationResult);
+            _mocker.Use(new GetAllByNameRequestValidator());
+            var invalidRequest = new GetAllCategoriesByNameRequest { Name = "" };
 
             // Act & Assert
-            await Assert.ThrowsAsync<ValidationException>(() => _sut.HandleAsync(_validRequest));
+            var exception = await Assert.ThrowsAsync<RpcException>(() => _sut.HandleAsync(invalidRequest));
+            Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
         }
 
         [Fact]

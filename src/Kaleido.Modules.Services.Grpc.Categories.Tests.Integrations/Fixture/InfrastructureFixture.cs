@@ -73,7 +73,6 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures
                     .WithDockerfile("dockerfiles/Grpc.Categories.Migrations/Dockerfile.local")
                     .WithName(_migrationImageName)
                     .WithLogger(new LoggerFactory().CreateLogger<ImageFromDockerfileBuilder>())
-                    .WithCleanUp(false)
                     .WithBuildArgument("NUGET_USER", nugetUser)
                     .WithBuildArgument("NUGET_TOKEN", nugetToken)
                     .Build();
@@ -85,7 +84,6 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures
                     .WithLogger(new LoggerFactory().CreateLogger<ImageFromDockerfileBuilder>())
                     .WithBuildArgument("NUGET_USER", nugetUser)
                     .WithBuildArgument("NUGET_TOKEN", nugetToken)
-                    .WithCleanUp(false)
                     .Build();
             }
 
@@ -138,8 +136,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures
 
 
             var grpcPort = GrpcContainer.GetMappedPublicPort(8080);
-            await TestcontainersSettings.ExposeHostPortsAsync(grpcPort)
-                .ConfigureAwait(false);
+            await TestcontainersSettings.ExposeHostPortsAsync(grpcPort);
             var grpcUri = new UriBuilder("http", GrpcContainer.Hostname, grpcPort);
             _channel = GrpcChannel.ForAddress(grpcUri.Uri);
 
@@ -162,10 +159,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures
         public async Task ClearDatabase()
         {
             // TODO: Implement
-            var categories = await Client.GetAllCategoriesAsync(new GetAllCategoriesRequest());
+            var categories = await Client.GetAllCategoriesAsync(new EmptyRequest());
             foreach (var category in categories.Categories)
             {
-                await Client.DeleteCategoryAsync(new DeleteCategoryRequest { Key = category.Key });
+                if (category.Revision.Action != "Deleted")
+                    await Client.DeleteCategoryAsync(new CategoryRequest { Key = category.Key });
             }
         }
     }

@@ -1,15 +1,15 @@
-using Xunit;
 using Moq;
 using Moq.AutoMock;
 using Grpc.Core;
 using Kaleido.Common.Services.Grpc.Models.Validations;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.GetAllRevisions;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Kaleido.Common.Services.Grpc.Exceptions;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
+using AutoMapper;
+using Kaleido.Modules.Services.Grpc.Categories.Mappers;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
 {
@@ -17,29 +17,42 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
     {
         private readonly AutoMocker _mocker;
         private readonly GetAllRevisionsHandler _sut;
-        private readonly GetAllCategoryRevisionsRequest _validRequest;
-        private readonly List<CategoryRevision> _validRevisions;
+        private readonly CategoryRequest _validRequest;
+        private readonly List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>> _validRevisions;
 
         public GetAllRevisionsHandlerTests()
         {
             _mocker = new AutoMocker();
-            _sut = _mocker.CreateInstance<GetAllRevisionsHandler>();
 
-            _validRequest = new GetAllCategoryRevisionsRequest { Key = "valid-key" };
-            _validRevisions = new List<CategoryRevision>
+            _validRequest = new CategoryRequest { Key = Guid.NewGuid().ToString() };
+            _validRevisions = new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>
             {
-                new CategoryRevision { Key = "valid-key", Name = "Revision 1", Revision = 1 },
-                new CategoryRevision { Key = "valid-key", Name = "Revision 2", Revision = 2 }
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Revision 1" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                },
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Revision 2" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                }
             };
 
             // Happy path setup
-            _mocker.GetMock<IRequestValidator<GetAllCategoryRevisionsRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<GetAllCategoryRevisionsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult());
+            _mocker.Use(new CategoryRequestValidator());
+
+            var mapper = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<CategoryMappingProfile>();
+            });
+            _mocker.Use(mapper.CreateMapper());
 
             _mocker.GetMock<IGetAllRevisionsManager>()
                 .Setup(m => m.HandleAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_validRevisions);
+
+            _sut = _mocker.CreateInstance<GetAllRevisionsHandler>();
         }
 
         [Fact]
@@ -50,20 +63,17 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<GetAllCategoryRevisionsResponse>(result);
-            Assert.Equal(_validRevisions.Count, result.Revisions.Count);
+            Assert.IsType<CategoryListResponse>(result);
+            Assert.Equal(_validRevisions.Count(), result.Categories.Count());
         }
 
         [Fact]
-        public async Task HandleAsync_ValidRequest_CallsValidatorAndManager()
+        public async Task HandleAsync_ValidRequest_CallsManager()
         {
             // Act
             await _sut.HandleAsync(_validRequest);
 
             // Assert
-            _mocker.GetMock<IRequestValidator<GetAllCategoryRevisionsRequest>>()
-                .Verify(v => v.ValidateAsync(_validRequest, It.IsAny<CancellationToken>()), Times.Once);
-
             _mocker.GetMock<IGetAllRevisionsManager>()
                 .Verify(m => m.HandleAsync(_validRequest.Key, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -72,14 +82,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
         public async Task HandleAsync_ValidationFails_ThrowsValidationException()
         {
             // Arrange
-            var validationResult = new ValidationResult();
-            validationResult.AddInvalidFormatError(["Key"], "Invalid key format");
-            _mocker.GetMock<IRequestValidator<GetAllCategoryRevisionsRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<GetAllCategoryRevisionsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(validationResult);
+            var invalidRequest = new CategoryRequest { Key = "" };
 
             // Act & Assert
-            await Assert.ThrowsAsync<ValidationException>(() => _sut.HandleAsync(_validRequest));
+            var exception = await Assert.ThrowsAsync<RpcException>(() => _sut.HandleAsync(invalidRequest));
+            Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
         }
 
         [Fact]
@@ -101,15 +108,15 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
             // Arrange
             _mocker.GetMock<IGetAllRevisionsManager>()
                 .Setup(m => m.HandleAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<CategoryRevision>());
+                .ReturnsAsync(new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>());
 
             // Act
             var result = await _sut.HandleAsync(_validRequest);
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<GetAllCategoryRevisionsResponse>(result);
-            Assert.Empty(result.Revisions);
+            Assert.IsType<CategoryListResponse>(result);
+            Assert.Empty(result.Categories);
         }
     }
 }

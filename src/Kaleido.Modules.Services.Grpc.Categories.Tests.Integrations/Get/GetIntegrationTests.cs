@@ -19,15 +19,15 @@ public class GetIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task Get_WithValidRequest_ShouldReturnCategory()
     {
         // Arrange
-        var createCategory = new CreateCategoryBuilder().WithName("Test Category").Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(new CreateCategoryRequest { Category = createCategory });
+        var createCategory = new CategoryBuilder().WithName("Test Category").Build();
+        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
         // Act
-        var getResponse = await _fixture.Client.GetCategoryAsync(new GetCategoryRequest { Key = createResponse.Category.Key });
+        var getResponse = await _fixture.Client.GetCategoryAsync(new CategoryRequest { Key = createResponse.Key });
 
         // Assert
         Assert.NotNull(getResponse.Category);
-        Assert.Equal(createResponse.Category.Key, getResponse.Category.Key);
+        Assert.Equal(createResponse.Key, getResponse.Key);
         Assert.Equal(createResponse.Category.Name, getResponse.Category.Name);
     }
 
@@ -35,7 +35,7 @@ public class GetIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task Get_WithNonExistentKey_ShouldReturnNotFound()
     {
         // Act
-        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetCategoryAsync(new GetCategoryRequest { Key = Guid.NewGuid().ToString() }));
+        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetCategoryAsync(new CategoryRequest { Key = Guid.NewGuid().ToString() }));
 
         // Assert
         Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);

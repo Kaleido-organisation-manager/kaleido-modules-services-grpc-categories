@@ -1,38 +1,44 @@
+using AutoMapper;
+using FluentValidation;
 using Grpc.Core;
-using Kaleido.Common.Services.Grpc.Handlers;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
-public class GetAllByNameHandler : IBaseHandler<GetAllCategoriesByNameRequest, GetAllCategoriesByNameResponse>
+public class GetAllByNameHandler : IGetAllByNameHandler
 {
     private readonly IGetAllByNameManager _manager;
     private readonly ILogger<GetAllByNameHandler> _logger;
-    public IRequestValidator<GetAllCategoriesByNameRequest> Validator { get; }
+    private readonly GetAllByNameRequestValidator _validator;
+    private readonly IMapper _mapper;
 
     public GetAllByNameHandler(
         IGetAllByNameManager manager,
         ILogger<GetAllByNameHandler> logger,
-        IRequestValidator<GetAllCategoriesByNameRequest> validator
+        GetAllByNameRequestValidator validator,
+        IMapper mapper
         )
     {
         _manager = manager;
         _logger = logger;
-        Validator = validator;
+        _validator = validator;
+        _mapper = mapper;
     }
 
-    public async Task<GetAllCategoriesByNameResponse> HandleAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryListResponse> HandleAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Handling GetAllCategoriesByName request for name: {name}", request.Name);
 
-        var validationResult = await Validator.ValidateAsync(request, cancellationToken);
-        validationResult.ThrowIfInvalid();
-
         try
         {
+            _validator.ValidateAndThrow(request);
             var categories = await _manager.GetAllByNameAsync(request.Name, cancellationToken);
-            return new GetAllCategoriesByNameResponse { Categories = { categories.ToList() } };
+            return _mapper.Map<CategoryListResponse>(categories);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for get all category by name. Name: {Name}. Errors: {Errors}", request.Name, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {

@@ -1,51 +1,37 @@
+using Kaleido.Common.Services.Grpc.Exceptions;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Validators.Interfaces;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Update;
 
 public class UpdateManager : IUpdateManager
 {
 
-    private readonly ICategoryRepository _repository;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _lifeCycleHandler;
     private readonly ILogger<UpdateManager> _logger;
-    private readonly ICategoryMapper _mapper;
 
     public UpdateManager(
-        ICategoryRepository repository,
-        ILogger<UpdateManager> logger,
-        ICategoryMapper mapper
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> lifecycleHandler,
+        ILogger<UpdateManager> logger
     )
     {
-        _repository = repository;
+        _lifeCycleHandler = lifecycleHandler;
         _logger = logger;
-        _mapper = mapper;
     }
 
-    public async Task<Category?> UpdateAsync(Category category, CancellationToken cancellationToken = default)
+    public async Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> UpdateAsync(Guid key, CategoryEntity category, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Updating category with key: {Key}", category.Key);
+        _logger.LogInformation("Updating category with key: {Key}", key);
 
-        var categoryKey = Guid.Parse(category.Key);
-        var storedCategory = await _repository.GetActiveAsync(categoryKey, cancellationToken);
-
-        if (storedCategory == null)
+        try
+        {
+            return await _lifeCycleHandler.UpdateAsync(key, category, cancellationToken);
+        }
+        catch (RevisionNotFoundException)
         {
             return null;
         }
-
-        var newRevision = storedCategory.Revision + 1;
-        var categoryEntity = _mapper.ToEntity(category, newRevision);
-
-        if (storedCategory.Equals(categoryEntity))
-        {
-            _logger.LogWarning("Category with key: {Key} has not changed", category.Key);
-            return category;
-        }
-
-        var updatedCategory = await _repository.UpdateAsync(categoryEntity, cancellationToken);
-
-        return _mapper.ToCategory(updatedCategory);
     }
 }

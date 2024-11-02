@@ -1,130 +1,57 @@
-using Moq.AutoMock;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 using Kaleido.Grpc.Categories;
-using Moq;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
+using FluentValidation.TestHelper;
 
-namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Common.Validators;
-
-public class CategoryValidatorTests
+namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Common.Validators
 {
-    private readonly AutoMocker _mocker;
-    private readonly CategoryValidator _sut;
-
-    public CategoryValidatorTests()
+    public class CategoryValidatorTests
     {
-        _mocker = new AutoMocker();
-        _sut = _mocker.CreateInstance<CategoryValidator>();
-    }
+        private readonly CategoryValidator _sut;
 
-    [Fact]
-    public async Task ValidateCreateAsync_ValidCategory_ReturnsValidResult()
-    {
-        // Arrange
-        var createCategory = new CreateCategory { Name = "Valid Category" };
+        public CategoryValidatorTests()
+        {
+            _sut = new CategoryValidator();
+        }
 
-        // Act
-        var result = await _sut.ValidateCreateAsync(createCategory);
+        [Fact]
+        public void Validate_ValidCategory_ShouldNotHaveValidationError()
+        {
+            // Arrange
+            var category = new Category { Name = "Test Category" };
 
-        // Assert
-        Assert.Empty(result.Errors);
-        Assert.True(result.IsValid);
-    }
+            // Act
+            var result = _sut.TestValidate(category);
 
-    [Fact]
-    public async Task ValidateUpdateAsync_ValidCategory_ReturnsValidResult()
-    {
-        // Arrange
-        var category = new Category { Key = Guid.NewGuid().ToString(), Name = "Valid Category" };
+            // Assert
+            result.ShouldNotHaveAnyValidationErrors();
+        }
 
-        // Act
-        var result = await _sut.ValidateUpdateAsync(category);
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void Validate_InvalidName_ShouldHaveValidationError(string name)
+        {
+            // Arrange
+            var category = new Category { Name = name };
 
-        // Assert
-        Assert.Empty(result.Errors);
-        Assert.True(result.IsValid);
-    }
+            // Act
+            var result = _sut.TestValidate(category);
 
-    [Fact]
-    public async Task ValidateKeyFormatAsync_ValidKey_ReturnsValidResult()
-    {
-        // Arrange
-        var key = Guid.NewGuid().ToString();
+            // Assert
+            result.ShouldHaveValidationErrorFor(x => x.Name);
+        }
 
-        // Act
-        var result = await _sut.ValidateKeyFormatAsync(key);
+        [Fact]
+        public void Validate_NameTooLong_ShouldHaveValidationError()
+        {
+            // Arrange
+            var category = new Category { Name = new string('a', 256) };
 
-        // Assert
-        Assert.True(result.IsValid);
-    }
+            // Act
+            var result = _sut.TestValidate(category);
 
-    [Fact]
-    public async Task ValidateCategoryNameAsync_ValidName_ReturnsValidResult()
-    {
-        // Arrange
-        var name = "Valid Category Name";
-
-        // Act
-        var result = await _sut.ValidateCategoryNameAsync(name);
-
-        // Assert
-        Assert.Empty(result.Errors);
-        Assert.True(result.IsValid);
-    }
-
-    [Fact]
-    public async Task ValidateCreateAsync_EmptyName_ReturnsInvalidResult()
-    {
-        // Arrange
-        var createCategory = new CreateCategory { Name = "" };
-
-        // Act
-        var result = await _sut.ValidateCreateAsync(createCategory);
-
-        // Assert
-        Assert.NotEmpty(result.Errors);
-        Assert.False(result.IsValid);
-    }
-
-    [Fact]
-    public async Task ValidateUpdateAsync_InvalidKey_ReturnsInvalidResult()
-    {
-        // Arrange
-        var category = new Category { Key = "invalid-key", Name = "Valid Category" };
-
-        // Act
-        var result = await _sut.ValidateUpdateAsync(category);
-
-        // Assert
-        Assert.NotEmpty(result.Errors);
-        Assert.False(result.IsValid);
-    }
-
-    [Fact]
-    public async Task ValidateKeyFormatAsync_EmptyKey_ReturnsInvalidResult()
-    {
-        // Arrange
-        var key = "";
-
-        // Act
-        var result = await _sut.ValidateKeyFormatAsync(key);
-
-        // Assert
-        Assert.NotEmpty(result.Errors);
-        Assert.False(result.IsValid);
-    }
-
-    [Fact]
-    public async Task ValidateCategoryNameAsync_LongName_ReturnsInvalidResult()
-    {
-        // Arrange
-        var name = new string('A', 101); // 101 characters
-
-        // Act
-        var result = await _sut.ValidateCategoryNameAsync(name);
-
-        // Assert
-        Assert.NotEmpty(result.Errors);
-        Assert.False(result.IsValid);
+            // Assert
+            result.ShouldHaveValidationErrorFor(x => x.Name);
+        }
     }
 }
-

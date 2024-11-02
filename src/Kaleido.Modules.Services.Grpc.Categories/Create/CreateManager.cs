@@ -1,33 +1,30 @@
+using AutoMapper;
+using Kaleido.Common.Services.Grpc.Handlers;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Create;
 
 public class CreateManager : ICreateManager
 {
-    private readonly ICategoryMapper _categoryMapper;
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _categoryLifeCycleHandler;
     private readonly ILogger<CreateManager> _logger;
 
     public CreateManager(
-        ICategoryMapper categoryMapper,
-        ICategoryRepository categoryRepository,
-        ILogger<CreateManager> logger)
+        IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> categoryRepository,
+        ILogger<CreateManager> logger
+        )
     {
-        _categoryMapper = categoryMapper;
-        _categoryRepository = categoryRepository;
+        _categoryLifeCycleHandler = categoryRepository;
         _logger = logger;
     }
 
-    public async Task<Category> CreateAsync(CreateCategory createCategory, CancellationToken cancellationToken = default)
+    public Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>> CreateAsync(CategoryEntity category, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Creating category with name: {Name}", createCategory.Name);
+        _logger.LogInformation("Creating category with name: {Name}", category.Name);
 
-        var category = _categoryMapper.ToCreateEntity(createCategory);
-
-        await _categoryRepository.CreateAsync(category, cancellationToken);
-
-        return _categoryMapper.ToCategory(category);
+        return _categoryLifeCycleHandler.CreateAsync(category, cancellationToken);
     }
 }

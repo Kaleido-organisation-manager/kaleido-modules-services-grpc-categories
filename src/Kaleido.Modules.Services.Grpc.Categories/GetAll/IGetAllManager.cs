@@ -1,8 +1,9 @@
-using Kaleido.Grpc.Categories;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAll;
 
 public interface IGetAllManager
 {
-    Task<IEnumerable<Category>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>> GetAllAsync(CancellationToken cancellationToken = default);
 }
