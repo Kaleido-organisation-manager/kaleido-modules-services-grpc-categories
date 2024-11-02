@@ -36,9 +36,14 @@ public class UpdateHandler : IUpdateHandler
 
         try
         {
-            _validator.ValidateAndThrow(request);
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             var category = _mapper.Map<CategoryEntity>(request.Category);
             updateResult = await _updateManager.UpdateAsync(Guid.Parse(request.Key), category, cancellationToken);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogError(ex, "Validation failed for update category. Key: {Key}. Errors: {Errors}", request.Key, ex.Errors.Select(e => e.ErrorMessage));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
         catch (Exception ex)
         {

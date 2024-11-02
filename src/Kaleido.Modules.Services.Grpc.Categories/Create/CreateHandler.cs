@@ -33,7 +33,7 @@ public class CreateHandler : ICreateHandler
 
         try
         {
-            _validator.ValidateAndThrow(request);
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             var category = _mapper.Map<CategoryEntity>(request);
             var result = await _createManager.CreateAsync(category, cancellationToken);
 

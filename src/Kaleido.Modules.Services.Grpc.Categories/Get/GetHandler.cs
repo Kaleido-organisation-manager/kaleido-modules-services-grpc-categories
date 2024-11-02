@@ -36,7 +36,7 @@ public class GetHandler : IGetHandler
 
         try
         {
-            _validator.ValidateAndThrow(request);
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             category = await _manager.GetAsync(request.Key, cancellationToken);
         }
         catch (ValidationException ex)

@@ -3,11 +3,15 @@ using Moq;
 using Moq.AutoMock;
 using Grpc.Core;
 using Kaleido.Common.Services.Grpc.Models.Validations;
-using Kaleido.Common.Services.Grpc.Validators;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Update;
 using Kaleido.Common.Services.Grpc.Exceptions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
+using AutoMapper;
+using Kaleido.Modules.Services.Grpc.Categories.Mappers;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
 {
@@ -15,31 +19,40 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
     {
         private readonly AutoMocker _mocker;
         private readonly UpdateHandler _sut;
-        private readonly UpdateCategoryRequest _validRequest;
-        private readonly Category _updatedCategory;
+        private readonly CategoryActionRequest _validRequest;
+        private readonly EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity> _updatedCategory;
 
         public UpdateHandlerTests()
         {
             _mocker = new AutoMocker();
-            _sut = _mocker.CreateInstance<UpdateHandler>();
 
             var categoryKey = Guid.NewGuid().ToString();
-            _validRequest = new UpdateCategoryRequest
+            _validRequest = new CategoryActionRequest
             {
                 Key = categoryKey,
-                Category = new Category { Key = categoryKey, Name = "Updated Category" }
+                Category = new Category { Name = "Updated Category" }
             };
 
-            _updatedCategory = new Category { Key = categoryKey, Name = "Updated Category" };
+            _updatedCategory = new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+            {
+                Entity = new CategoryEntity { Name = "Updated Category" },
+                Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+            };
 
             // Happy path setup
-            _mocker.GetMock<IRequestValidator<UpdateCategoryRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<UpdateCategoryRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult());
+            _mocker.Use(new CategoryActionValidator());
+
+            var mapper = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<CategoryMappingProfile>();
+            });
+            _mocker.Use(mapper.CreateMapper());
 
             _mocker.GetMock<IUpdateManager>()
-                .Setup(m => m.UpdateAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.UpdateAsync(It.IsAny<Guid>(), It.IsAny<CategoryEntity>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_updatedCategory);
+
+            _sut = _mocker.CreateInstance<UpdateHandler>();
         }
 
         [Fact]
@@ -50,36 +63,34 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<UpdateCategoryResponse>(result);
-            Assert.Equal(_updatedCategory, result.Category);
+            Assert.IsType<CategoryResponse>(result);
+            Assert.Equal(_updatedCategory.Key.ToString(), result.Key);
         }
 
         [Fact]
-        public async Task HandleAsync_ValidRequest_CallsValidatorAndManager()
+        public async Task HandleAsync_ValidRequest_CallsManager()
         {
             // Act
             await _sut.HandleAsync(_validRequest);
 
             // Assert
-            _mocker.GetMock<IRequestValidator<UpdateCategoryRequest>>()
-                .Verify(v => v.ValidateAsync(_validRequest, It.IsAny<CancellationToken>()), Times.Once);
-
             _mocker.GetMock<IUpdateManager>()
-                .Verify(m => m.UpdateAsync(_validRequest.Category, It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(m => m.UpdateAsync(It.IsAny<Guid>(), It.IsAny<CategoryEntity>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task HandleAsync_ValidationFails_ThrowsValidationException()
         {
             // Arrange
-            var validationResult = new ValidationResult();
-            validationResult.AddInvalidFormatError(["Name"], "Invalid name format");
-            _mocker.GetMock<IRequestValidator<UpdateCategoryRequest>>()
-                .Setup(v => v.ValidateAsync(It.IsAny<UpdateCategoryRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(validationResult);
+            var invalidRequest = new CategoryActionRequest
+            {
+                Key = Guid.NewGuid().ToString(),
+                Category = new Category { Name = "" }
+            };
 
             // Act & Assert
-            await Assert.ThrowsAsync<ValidationException>(() => _sut.HandleAsync(_validRequest));
+            var exception = await Assert.ThrowsAsync<RpcException>(() => _sut.HandleAsync(invalidRequest));
+            Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
         }
 
         [Fact]
@@ -87,8 +98,8 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
         {
             // Arrange
             _mocker.GetMock<IUpdateManager>()
-                .Setup(m => m.UpdateAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Category?)null);
+                .Setup(m => m.UpdateAsync(It.IsAny<Guid>(), It.IsAny<CategoryEntity>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?)null);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<RpcException>(() => _sut.HandleAsync(_validRequest));
@@ -100,7 +111,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
         {
             // Arrange
             _mocker.GetMock<IUpdateManager>()
-                .Setup(m => m.UpdateAsync(It.IsAny<Category>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.UpdateAsync(It.IsAny<Guid>(), It.IsAny<CategoryEntity>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Test exception"));
 
             // Act & Assert

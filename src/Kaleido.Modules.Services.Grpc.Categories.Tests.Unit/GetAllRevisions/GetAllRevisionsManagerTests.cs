@@ -1,15 +1,9 @@
-using Xunit;
 using Moq;
 using Moq.AutoMock;
-using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.GetAllRevisions;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
 {
@@ -18,8 +12,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
         private readonly AutoMocker _mocker;
         private readonly GetAllRevisionsManager _sut;
         private readonly Guid _categoryKey;
-        private readonly List<CategoryEntity> _categoryEntities;
-        private readonly List<CategoryRevision> _categoryRevisions;
+        private readonly List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>> _categoryEntities;
 
         public GetAllRevisionsManagerTests()
         {
@@ -27,24 +20,23 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
             _sut = _mocker.CreateInstance<GetAllRevisionsManager>();
 
             _categoryKey = Guid.NewGuid();
-            _categoryEntities = new List<CategoryEntity>
+            _categoryEntities = new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>
             {
-                new CategoryEntity { Id = Guid.NewGuid(), Key = _categoryKey, Name = "Category 1", Revision = 1 },
-                new CategoryEntity { Id = Guid.NewGuid(), Key = _categoryKey, Name = "Category 1 Updated", Revision = 2 }
-            };
-            _categoryRevisions = new List<CategoryRevision>
-            {
-                new CategoryRevision { Key = _categoryKey.ToString(), Name = "Category 1", Revision = 1 },
-                new CategoryRevision { Key = _categoryKey.ToString(), Name = "Category 1 Updated", Revision = 2 }
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Category 1" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                },
+                new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
+                {
+                    Entity = new CategoryEntity { Name = "Category 1 Updated" },
+                    Revision = new BaseRevisionEntity { Id = Guid.NewGuid() }
+                }
             };
 
-            _mocker.GetMock<ICategoryRepository>()
-                .Setup(r => r.GetAllRevisionsAsync(_categoryKey, It.IsAny<CancellationToken>()))
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
+                .Setup(r => r.GetAllAsync(_categoryKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_categoryEntities);
-
-            _mocker.GetMock<ICategoryMapper>()
-                .Setup(m => m.ToCategoryRevision(It.IsAny<CategoryEntity>()))
-                .Returns<CategoryEntity>(entity => _categoryRevisions.First(r => r.Revision == entity.Revision));
         }
 
         [Fact]
@@ -57,37 +49,10 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
             await _sut.HandleAsync(key);
 
             // Assert
-            _mocker.GetMock<ICategoryRepository>()
-                .Verify(r => r.GetAllRevisionsAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
+                .Verify(r => r.GetAllAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Fact]
-        public async Task HandleAsync_ShouldCallMapperToCategoryRevisionForEachEntity()
-        {
-            // Arrange
-            var key = _categoryKey.ToString();
-
-            // Act
-            await _sut.HandleAsync(key);
-
-            // Assert
-            _mocker.GetMock<ICategoryMapper>()
-                .Verify(m => m.ToCategoryRevision(It.IsAny<CategoryEntity>()), Times.Exactly(_categoryEntities.Count));
-        }
-
-        [Fact]
-        public async Task HandleAsync_ShouldReturnMappedCategoryRevisions()
-        {
-            // Arrange
-            var key = _categoryKey.ToString();
-
-            // Act
-            var result = await _sut.HandleAsync(key);
-
-            // Assert
-            Assert.Equal(_categoryRevisions.Count, result.Count());
-            Assert.Equal(_categoryRevisions, result);
-        }
 
         [Fact]
         public async Task HandleAsync_ShouldPassCancellationTokenToRepository()
@@ -100,8 +65,8 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
             await _sut.HandleAsync(key, cancellationToken);
 
             // Assert
-            _mocker.GetMock<ICategoryRepository>()
-                .Verify(r => r.GetAllRevisionsAsync(_categoryKey, cancellationToken), Times.Once);
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
+                .Verify(r => r.GetAllAsync(_categoryKey, cancellationToken), Times.Once);
         }
 
         [Fact]
@@ -114,8 +79,8 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
             await _sut.HandleAsync(key);
 
             // Assert
-            _mocker.GetMock<ICategoryRepository>()
-                .Verify(r => r.GetAllRevisionsAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
+                .Verify(r => r.GetAllAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -123,9 +88,9 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllRevisions
         {
             // Arrange
             var key = _categoryKey.ToString();
-            _mocker.GetMock<ICategoryRepository>()
-                .Setup(r => r.GetAllRevisionsAsync(_categoryKey, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<CategoryEntity>());
+            _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
+                .Setup(r => r.GetAllAsync(_categoryKey, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>());
 
             // Act
             var result = await _sut.HandleAsync(key);

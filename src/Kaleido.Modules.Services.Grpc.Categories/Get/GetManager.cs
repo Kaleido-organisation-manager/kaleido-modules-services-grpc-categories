@@ -32,6 +32,6 @@ public class GetManager : IGetManager
         {
             return null;
         }
-        return _mapper.Map<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?>(result);
+        return result;
     }
 }

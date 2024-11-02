@@ -37,7 +37,7 @@ public class DeleteHandler : IDeleteHandler
         EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>? entity;
         try
         {
-            _validator.ValidateAndThrow(request);
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             entity = await _deleteManager.DeleteCategoryAsync(request.Key, cancellationToken);
         }
         catch (ValidationException ex)

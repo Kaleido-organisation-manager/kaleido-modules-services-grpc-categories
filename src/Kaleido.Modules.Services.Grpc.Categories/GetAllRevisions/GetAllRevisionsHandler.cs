@@ -33,7 +33,7 @@ public class GetAllRevisionsHandler : IGetAllRevisionsHandler
 
         try
         {
-            _validator.ValidateAndThrow(request);
+            await _validator.ValidateAndThrowAsync(request, cancellationToken);
             var revisions = await _manager.HandleAsync(request.Key, cancellationToken);
             return _mapper.Map<CategoryListResponse>(revisions);
         }

@@ -1,12 +1,11 @@
 using Moq;
 using Moq.AutoMock;
-using Xunit;
-using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Mappers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Repositories.Interfaces;
 using Kaleido.Modules.Services.Grpc.Categories.Create;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
-using Kaleido.Common.Services.Grpc.Constants;
+using AutoMapper;
+using Kaleido.Modules.Services.Grpc.Categories.Mappers;
+using Kaleido.Common.Services.Grpc.Models;
+using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Create;
 
@@ -14,82 +13,44 @@ public class CreateManagerTests
 {
     private readonly AutoMocker _mocker;
     private readonly CreateManager _sut;
-    private readonly CreateCategory _createCategory;
     private readonly CategoryEntity _categoryEntity;
-    private readonly Category _category;
 
     public CreateManagerTests()
     {
         _mocker = new AutoMocker();
         _sut = _mocker.CreateInstance<CreateManager>();
 
-        _createCategory = new CreateCategory { Name = "Test Category" };
         _categoryEntity = new CategoryEntity
         {
             Id = Guid.NewGuid(),
-            Key = Guid.NewGuid(),
-            Name = "Test Category",
-            CreatedAt = DateTime.UtcNow,
-            Revision = 1,
-            Status = EntityStatus.Active
+            Name = "Test Category"
         };
-        _category = new Category { Key = _categoryEntity.Key.ToString(), Name = _categoryEntity.Name };
 
-        _mocker.GetMock<ICategoryMapper>()
-            .Setup(m => m.ToCreateEntity(_createCategory))
-            .Returns(_categoryEntity);
+        _mocker.Use(() =>
+        {
+            var mapper = new MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<CategoryMappingProfile>();
+            });
+            return mapper.CreateMapper();
+        });
 
-        _mocker.GetMock<ICategoryMapper>()
-            .Setup(m => m.ToCategory(_categoryEntity))
-            .Returns(_category);
-
-        _mocker.GetMock<ICategoryRepository>()
+        _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
             .Setup(r => r.CreateAsync(_categoryEntity, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_categoryEntity);
-    }
-
-    [Fact]
-    public async Task CreateAsync_ShouldCallMapperToCreateEntity()
-    {
-        // Act
-        await _sut.CreateAsync(_createCategory);
-
-        // Assert
-        _mocker.GetMock<ICategoryMapper>()
-            .Verify(m => m.ToCreateEntity(_createCategory), Times.Once);
+            .ReturnsAsync(new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity> { Entity = _categoryEntity, Revision = new BaseRevisionEntity() });
     }
 
     [Fact]
     public async Task CreateAsync_ShouldCallRepositoryCreateAsync()
     {
         // Act
-        await _sut.CreateAsync(_createCategory);
+        await _sut.CreateAsync(_categoryEntity);
 
         // Assert
-        _mocker.GetMock<ICategoryRepository>()
+        _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
             .Verify(r => r.CreateAsync(_categoryEntity, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task CreateAsync_ShouldCallMapperToCategory()
-    {
-        // Act
-        await _sut.CreateAsync(_createCategory);
-
-        // Assert
-        _mocker.GetMock<ICategoryMapper>()
-            .Verify(m => m.ToCategory(_categoryEntity), Times.Once);
-    }
-
-    [Fact]
-    public async Task CreateAsync_ShouldReturnMappedCategory()
-    {
-        // Act
-        var result = await _sut.CreateAsync(_createCategory);
-
-        // Assert
-        Assert.Equal(_category, result);
-    }
 
     [Fact]
     public async Task CreateAsync_ShouldPassCancellationTokenToRepository()
@@ -98,11 +59,10 @@ public class CreateManagerTests
         var cancellationToken = new CancellationToken();
 
         // Act
-        await _sut.CreateAsync(_createCategory, cancellationToken);
+        await _sut.CreateAsync(_categoryEntity, cancellationToken);
 
         // Assert
-        _mocker.GetMock<ICategoryRepository>()
+        _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
             .Verify(r => r.CreateAsync(_categoryEntity, cancellationToken), Times.Once);
     }
 }
-

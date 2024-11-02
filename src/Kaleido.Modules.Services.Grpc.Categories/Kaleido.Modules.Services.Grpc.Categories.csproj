@@ -30,8 +30,4 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.8" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- <ProjectReference Include="../../../kaleido-common-services/src/Kaleido.Common.Services.Grpc/Kaleido.Common.Services.Grpc.csproj" /> -->
-  </ItemGroup>
-
 </Project>
