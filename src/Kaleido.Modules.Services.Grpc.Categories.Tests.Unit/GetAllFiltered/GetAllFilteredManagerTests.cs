@@ -8,17 +8,17 @@ using System.Linq.Expressions;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetAllByName
 {
-    public class GetAllByNameManagerTests
+    public class GetAllFilteredManagerTests
     {
         private readonly AutoMocker _mocker;
-        private readonly GetAllByNameManager _sut;
+        private readonly GetAllFilteredManager _sut;
         private readonly string _testName;
         private readonly List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>> _testCategories;
 
-        public GetAllByNameManagerTests()
+        public GetAllFilteredManagerTests()
         {
             _mocker = new AutoMocker();
-            _sut = _mocker.CreateInstance<GetAllByNameManager>();
+            _sut = _mocker.CreateInstance<GetAllFilteredManager>();
 
             _testName = "Test Category";
             _testCategories = new List<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>

@@ -39,7 +39,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
             });
 
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()))
+                .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_categoryEntity);
         }
 
@@ -54,7 +54,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
 
             // Assert
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Verify(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(r => r.DeleteAsync(_categoryKey, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Delete
             // Arrange
             var key = _categoryKey.ToString();
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<CancellationToken>()))
+                .Setup(r => r.DeleteAsync(_categoryKey, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>)null!);
 
             // Act

@@ -4,11 +4,6 @@ using Kaleido.Modules.Services.Grpc.Categories.Update;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Common.Services.Grpc.Handlers.Interfaces;
-using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
-using AutoMapper;
-using Kaleido.Modules.Services.Grpc.Categories.Mappers;
-using FluentValidation;
-using Grpc.Core;
 using Kaleido.Common.Services.Grpc.Exceptions;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
@@ -47,7 +42,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
             };
 
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(handler => handler.UpdateAsync(_categoryKey, _categoryEntity, It.IsAny<CancellationToken>()))
+                .Setup(handler => handler.UpdateAsync(_categoryKey, _categoryEntity, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
             // Act
@@ -64,7 +59,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
         {
             // Arrange
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(handler => handler.UpdateAsync(_categoryKey, _categoryEntity, It.IsAny<CancellationToken>()))
+                .Setup(handler => handler.UpdateAsync(_categoryKey, _categoryEntity, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new RevisionNotFoundException("Test exception"));
 
             // Act

@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 package Kaleido.Grpc.Categories;
+
+import "google/protobuf/timestamp.proto";
   
 message Category {
     string name = 1;
@@ -21,7 +23,8 @@ message CategoryRevision {
     string key = 1;
     int32 revision = 2;
     string action = 3;
-    string createdAt = 4;
+    google.protobuf.Timestamp createdAt = 4;
+    string status = 5;
 }
 
 message CategoryResponse {
@@ -34,12 +37,12 @@ message CategoryListResponse {
     repeated CategoryResponse categories = 1;
 }
 
-message GetAllCategoriesByNameRequest {
+message GetAllCategoriesFilteredRequest {
     string name = 1;
 }
 
 message GetCategoryRevisionRequest {
-    string key = 1;
-    int32 revision = 2;
+  string key = 1;
+  google.protobuf.Timestamp createdAt = 2;
 }
 

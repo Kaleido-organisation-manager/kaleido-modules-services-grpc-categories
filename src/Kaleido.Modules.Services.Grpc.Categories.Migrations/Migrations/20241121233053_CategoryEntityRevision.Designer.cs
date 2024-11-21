@@ -3,17 +3,20 @@ using System;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations.CategoryEntityRevisionDb
+namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
 {
     [DbContext(typeof(CategoryEntityRevisionDbContext))]
-    partial class CategoryEntityRevisionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241121233053_CategoryEntityRevision")]
+    partial class CategoryEntityRevision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,6 +46,9 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations.Categor
 
                     b.Property<int>("Revision")
                         .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

@@ -1,4 +1,5 @@
 using AutoMapper;
+using Google.Protobuf.WellKnownTypes;
 using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
@@ -19,5 +20,9 @@ public class CategoryMappingProfile : Profile
 
         CreateMap<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>, CategoryListResponse>()
             .ForMember(c => c.Categories, opt => opt.MapFrom(c => c));
+
+        // DateTime <-> Timestamp conversions
+        CreateMap<Timestamp, DateTime>().ConvertUsing(src => src.ToDateTime());
+        CreateMap<DateTime, Timestamp>().ConvertUsing(src => Timestamp.FromDateTime(src.ToUniversalTime()));
     }
 }

@@ -6,5 +6,5 @@ namespace Kaleido.Modules.Services.Grpc.Categories.GetRevision;
 
 public interface IGetRevisionManager
 {
-    Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> GetRevisionAsync(string key, int revision, CancellationToken cancellationToken = default);
+    Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> GetRevisionAsync(string key, DateTime createdAt, CancellationToken cancellationToken = default);
 }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
 {
     /// <inheritdoc />
-    public partial class Categories : Migration
+    public partial class CategoryEntity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -8,6 +8,8 @@ using AutoMapper;
 using Kaleido.Modules.Services.Grpc.Categories.Mappers;
 using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
+using Google.Protobuf.WellKnownTypes;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
 {
@@ -22,7 +24,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
         {
             _mocker = new AutoMocker();
 
-            _validRequest = new GetCategoryRevisionRequest { Key = Guid.NewGuid().ToString(), Revision = 1 };
+            _validRequest = new GetCategoryRevisionRequest { Key = Guid.NewGuid().ToString(), CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) };
             _validRevision = new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
             {
                 Entity = new CategoryEntity { Name = "Test Category" },
@@ -30,7 +32,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             };
 
             // Happy path setup
-            _mocker.Use(new GetCategoryRevisionRequestValidator());
+            _mocker.Use(new KeyValidator());
 
             var mapper = new MapperConfiguration(cfg =>
             {
@@ -39,7 +41,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             _mocker.Use(mapper.CreateMapper());
 
             _mocker.GetMock<IGetRevisionManager>()
-                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_validRevision);
 
             _sut = _mocker.CreateInstance<GetRevisionHandler>();
@@ -65,14 +67,14 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
 
             // Assert
             _mocker.GetMock<IGetRevisionManager>()
-                .Verify(m => m.GetRevisionAsync(_validRequest.Key, _validRequest.Revision, It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(m => m.GetRevisionAsync(_validRequest.Key, _validRequest.CreatedAt.ToDateTime(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task HandleAsync_ValidationFails_ThrowsValidationException()
         {
             // Arrange
-            var invalidRequest = new GetCategoryRevisionRequest { Key = "invalid-key", Revision = 1 };
+            var invalidRequest = new GetCategoryRevisionRequest { Key = "invalid-key", CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) };
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<RpcException>(() => _sut.HandleAsync(invalidRequest));
@@ -84,7 +86,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
         {
             // Arrange
             _mocker.GetMock<IGetRevisionManager>()
-                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?)null);
 
             // Act & Assert
@@ -97,7 +99,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
         {
             // Arrange
             _mocker.GetMock<IGetRevisionManager>()
-                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetRevisionAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Test exception"));
 
             // Act & Assert
