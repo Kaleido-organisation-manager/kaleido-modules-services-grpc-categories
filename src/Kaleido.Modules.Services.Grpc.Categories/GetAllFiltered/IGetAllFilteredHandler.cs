@@ -3,4 +3,4 @@ using Kaleido.Grpc.Categories;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
-public interface IGetAllByNameHandler : IBaseHandler<GetAllCategoriesByNameRequest, CategoryListResponse>;
+public interface IGetAllFilteredHandler : IBaseHandler<GetAllCategoriesFilteredRequest, CategoryListResponse>;

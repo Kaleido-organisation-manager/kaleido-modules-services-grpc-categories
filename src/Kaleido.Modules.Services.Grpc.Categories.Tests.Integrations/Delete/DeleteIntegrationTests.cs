@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
@@ -6,7 +7,8 @@ using Renci.SshNet.Security;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Delete;
 
-public class DeleteIntegrationTests : IClassFixture<InfrastructureFixture>
+[Collection("Infrastructure collection")]
+public class DeleteIntegrationTests
 {
     private readonly InfrastructureFixture _fixture;
 
@@ -51,7 +53,9 @@ public class DeleteIntegrationTests : IClassFixture<InfrastructureFixture>
 
         // Act
         var deleteResponse = await _fixture.Client.DeleteCategoryAsync(new CategoryRequest { Key = createResponse.Key });
-        var getRevisionResponse = await _fixture.Client.GetCategoryRevisionAsync(new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 2 });
+        var getRevisionResponse = await _fixture.Client.GetCategoryRevisionAsync(
+            new GetCategoryRevisionRequest { Key = createResponse.Key, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) }
+        );
 
         // Assert
         Assert.Equal(createResponse.Key, deleteResponse.Key);

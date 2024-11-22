@@ -2,20 +2,21 @@ using AutoMapper;
 using FluentValidation;
 using Grpc.Core;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Common.Validators;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
-public class GetAllByNameHandler : IGetAllByNameHandler
+public class GetAllFilteredHandler : IGetAllFilteredHandler
 {
-    private readonly IGetAllByNameManager _manager;
-    private readonly ILogger<GetAllByNameHandler> _logger;
-    private readonly GetAllByNameRequestValidator _validator;
+    private readonly IGetAllFilteredManager _manager;
+    private readonly ILogger<GetAllFilteredHandler> _logger;
+    private readonly NameValidator _validator;
     private readonly IMapper _mapper;
 
-    public GetAllByNameHandler(
-        IGetAllByNameManager manager,
-        ILogger<GetAllByNameHandler> logger,
-        GetAllByNameRequestValidator validator,
+    public GetAllFilteredHandler(
+        IGetAllFilteredManager manager,
+        ILogger<GetAllFilteredHandler> logger,
+        NameValidator validator,
         IMapper mapper
         )
     {
@@ -25,13 +26,13 @@ public class GetAllByNameHandler : IGetAllByNameHandler
         _mapper = mapper;
     }
 
-    public async Task<CategoryListResponse> HandleAsync(GetAllCategoriesByNameRequest request, CancellationToken cancellationToken = default)
+    public async Task<CategoryListResponse> HandleAsync(GetAllCategoriesFilteredRequest request, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Handling GetAllCategoriesByName request for name: {name}", request.Name);
+        _logger.LogInformation("Handling GetAllCategoriesFiltered request for name: {name}", request.Name);
 
         try
         {
-            _validator.ValidateAndThrow(request);
+            _validator.ValidateAndThrow(request.Name);
             var categories = await _manager.GetAllByNameAsync(request.Name, cancellationToken);
             return _mapper.Map<CategoryListResponse>(categories);
         }

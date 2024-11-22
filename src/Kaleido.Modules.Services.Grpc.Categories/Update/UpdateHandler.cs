@@ -12,19 +12,22 @@ public class UpdateHandler : IUpdateHandler
 {
     private readonly IUpdateManager _updateManager;
     private readonly ILogger<UpdateHandler> _logger;
-    private readonly CategoryActionValidator _validator;
+    private readonly KeyValidator _keyValidator;
+    private readonly CategoryValidator _categoryValidator;
     private readonly IMapper _mapper;
 
     public UpdateHandler(
         IUpdateManager updateManager,
         ILogger<UpdateHandler> logger,
-        CategoryActionValidator validator,
+        KeyValidator keyValidator,
+        CategoryValidator categoryValidator,
         IMapper mapper
     )
     {
         _updateManager = updateManager;
         _logger = logger;
-        _validator = validator;
+        _keyValidator = keyValidator;
+        _categoryValidator = categoryValidator;
         _mapper = mapper;
     }
 
@@ -36,7 +39,8 @@ public class UpdateHandler : IUpdateHandler
 
         try
         {
-            await _validator.ValidateAndThrowAsync(request, cancellationToken);
+            await _keyValidator.ValidateAndThrowAsync(request.Key, cancellationToken);
+            await _categoryValidator.ValidateAndThrowAsync(request.Category, cancellationToken);
             var category = _mapper.Map<CategoryEntity>(request.Category);
             updateResult = await _updateManager.UpdateAsync(Guid.Parse(request.Key), category, cancellationToken);
         }

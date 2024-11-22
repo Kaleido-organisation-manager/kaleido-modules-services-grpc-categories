@@ -25,6 +25,6 @@ public class CreateManager : ICreateManager
     {
         _logger.LogInformation("Creating category with name: {Name}", category.Name);
 
-        return _categoryLifeCycleHandler.CreateAsync(category, cancellationToken);
+        return _categoryLifeCycleHandler.CreateAsync(category, cancellationToken: cancellationToken);
     }
 }

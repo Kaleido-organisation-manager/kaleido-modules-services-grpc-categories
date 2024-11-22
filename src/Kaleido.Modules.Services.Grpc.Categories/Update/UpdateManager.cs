@@ -27,7 +27,7 @@ public class UpdateManager : IUpdateManager
 
         try
         {
-            return await _lifeCycleHandler.UpdateAsync(key, category, cancellationToken);
+            return await _lifeCycleHandler.UpdateAsync(key, category, cancellationToken: cancellationToken);
         }
         catch (RevisionNotFoundException)
         {

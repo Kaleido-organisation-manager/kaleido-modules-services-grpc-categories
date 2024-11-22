@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations.CategoryEntityRevisionDb
+namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
 {
     /// <inheritdoc />
-    public partial class CategoryRevisions : Migration
+    public partial class CategoryEntityRevision : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,8 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations.Categor
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
                     Revision = table.Column<int>(type: "int", nullable: false),
                     Action = table.Column<string>(type: "varchar(8)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {

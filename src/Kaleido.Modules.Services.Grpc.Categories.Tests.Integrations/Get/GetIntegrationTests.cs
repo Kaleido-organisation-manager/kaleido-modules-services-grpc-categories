@@ -5,7 +5,8 @@ using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Get;
 
-public class GetIntegrationTests : IClassFixture<InfrastructureFixture>
+[Collection("Infrastructure collection")]
+public class GetIntegrationTests
 {
     private readonly InfrastructureFixture _fixture;
 

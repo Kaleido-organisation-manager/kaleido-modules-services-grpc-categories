@@ -30,7 +30,7 @@ public class DeleteManager : IDeleteManager
         _logger.LogInformation("Deleting category with key: {CategoryKey}", categoryKey);
         try
         {
-            return await _categoryLifeCycleHandler.DeleteAsync(categoryKey, cancellationToken);
+            return await _categoryLifeCycleHandler.DeleteAsync(categoryKey, cancellationToken: cancellationToken);
         }
         catch (RevisionNotFoundException)
         {

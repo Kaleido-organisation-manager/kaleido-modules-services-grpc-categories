@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kaleido.Modules.Services.Grpc.Categories.Migrations.Migrations
 {
     [DbContext(typeof(CategoryEntityDbContext))]
-    [Migration("20241031094211_Categories")]
-    partial class Categories
+    [Migration("20241121233051_CategoryEntity")]
+    partial class CategoryEntity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

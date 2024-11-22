@@ -18,12 +18,12 @@ public class GetRevisionManager : IGetRevisionManager
         _logger = logger;
     }
 
-    public async Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> GetRevisionAsync(string key, int revision, CancellationToken cancellationToken = default)
+    public async Task<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>?> GetRevisionAsync(string key, DateTime createdAt, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Getting revision {Revision} for category with key: {Key}", revision, key);
+        _logger.LogInformation("Getting revision for category with key: {Key} at {CreatedAt}", key, createdAt);
 
         var categoryKey = Guid.Parse(key);
-        return await _lifeCycleHandler.GetAsync(categoryKey, revision, cancellationToken);
+        return await _lifeCycleHandler.GetHistoricAsync(categoryKey, createdAt, cancellationToken);
 
 
     }

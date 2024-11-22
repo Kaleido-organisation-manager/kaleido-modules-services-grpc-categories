@@ -14,7 +14,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
         private readonly AutoMocker _mocker;
         private readonly GetRevisionManager _sut;
         private readonly Guid _categoryKey;
-        private readonly int _revision;
+        private readonly DateTime _createdAt;
         private readonly EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity> _categoryEntity;
 
         public GetRevisionManagerTests()
@@ -23,7 +23,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             _sut = _mocker.CreateInstance<GetRevisionManager>();
 
             _categoryKey = Guid.NewGuid();
-            _revision = 1;
+            _createdAt = DateTime.UtcNow;
             _categoryEntity = new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>
             {
                 Entity = new CategoryEntity
@@ -34,14 +34,14 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
                 Revision = new BaseRevisionEntity
                 {
                     Id = Guid.NewGuid(),
-                    Revision = _revision,
+                    CreatedAt = _createdAt,
                     Key = _categoryKey
                 }
             };
 
             // Happy path setup
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(r => r.GetAsync(_categoryKey, _revision, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetHistoricAsync(_categoryKey, _createdAt, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(_categoryEntity);
         }
 
@@ -52,11 +52,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             var key = _categoryKey.ToString();
 
             // Act
-            await _sut.GetRevisionAsync(key, _revision);
+            await _sut.GetRevisionAsync(key, _createdAt);
 
             // Assert
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Verify(r => r.GetAsync(_categoryKey, _revision, It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(r => r.GetHistoricAsync(_categoryKey, _createdAt, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             var key = _categoryKey.ToString();
 
             // Act
-            var result = await _sut.GetRevisionAsync(key, _revision);
+            var result = await _sut.GetRevisionAsync(key, _createdAt);
 
             // Assert
             Assert.NotNull(result);
@@ -79,11 +79,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             // Arrange
             var key = _categoryKey.ToString();
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Setup(r => r.GetAsync(_categoryKey, _revision, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetHistoricAsync(_categoryKey, _createdAt, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>)null!);
 
             // Act
-            var result = await _sut.GetRevisionAsync(key, _revision);
+            var result = await _sut.GetRevisionAsync(key, _createdAt);
 
             // Assert
             Assert.Null(result);
@@ -97,11 +97,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             var cancellationToken = new CancellationToken();
 
             // Act
-            await _sut.GetRevisionAsync(key, _revision, cancellationToken);
+            await _sut.GetRevisionAsync(key, _createdAt, cancellationToken);
 
             // Assert
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Verify(r => r.GetAsync(_categoryKey, _revision, cancellationToken), Times.Once);
+                .Verify(r => r.GetHistoricAsync(_categoryKey, _createdAt, cancellationToken), Times.Once);
         }
 
         [Fact]
@@ -111,11 +111,11 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.GetRevision
             var key = _categoryKey.ToString();
 
             // Act
-            await _sut.GetRevisionAsync(key, _revision);
+            await _sut.GetRevisionAsync(key, _createdAt);
 
             // Assert
             _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-                .Verify(r => r.GetAsync(_categoryKey, _revision, It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(r => r.GetHistoricAsync(_categoryKey, _createdAt, It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

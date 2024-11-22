@@ -90,14 +90,14 @@ public class CategoryServiceTests
     public async Task GetAllCategoriesByName_CallsHandleAsyncOnGetAllByNameHandler()
     {
         // Arrange
-        var request = new GetAllCategoriesByNameRequest();
+        var request = new GetAllCategoriesFilteredRequest();
         var context = new Mock<ServerCallContext>().Object;
 
         // Act
-        await _sut.GetAllCategoriesByName(request, context);
+        await _sut.GetAllCategoriesFiltered(request, context);
 
         // Assert
-        _mocker.GetMock<IGetAllByNameHandler>()
+        _mocker.GetMock<IGetAllFilteredHandler>()
             .Verify(x => x.HandleAsync(request, It.IsAny<CancellationToken>()), Times.Once);
     }
 

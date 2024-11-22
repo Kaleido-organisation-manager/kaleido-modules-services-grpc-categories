@@ -36,7 +36,7 @@ public class CreateManagerTests
         });
 
         _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-            .Setup(r => r.CreateAsync(_categoryEntity, It.IsAny<CancellationToken>()))
+            .Setup(r => r.CreateAsync(_categoryEntity, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity> { Entity = _categoryEntity, Revision = new BaseRevisionEntity() });
     }
 
@@ -48,7 +48,7 @@ public class CreateManagerTests
 
         // Assert
         _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-            .Verify(r => r.CreateAsync(_categoryEntity, It.IsAny<CancellationToken>()), Times.Once);
+            .Verify(r => r.CreateAsync(_categoryEntity, It.IsAny<BaseRevisionEntity>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
 
@@ -63,6 +63,6 @@ public class CreateManagerTests
 
         // Assert
         _mocker.GetMock<IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity>>()
-            .Verify(r => r.CreateAsync(_categoryEntity, cancellationToken), Times.Once);
+            .Verify(r => r.CreateAsync(_categoryEntity, It.IsAny<BaseRevisionEntity>(), cancellationToken), Times.Once);
     }
 }

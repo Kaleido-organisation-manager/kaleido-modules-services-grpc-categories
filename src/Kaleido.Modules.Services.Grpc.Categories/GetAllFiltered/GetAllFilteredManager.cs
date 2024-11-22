@@ -5,14 +5,14 @@ using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
-public class GetAllByNameManager : IGetAllByNameManager
+public class GetAllFilteredManager : IGetAllFilteredManager
 {
     private readonly IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> _lifeCycleHandler;
-    private readonly ILogger<GetAllByNameManager> _logger;
+    private readonly ILogger<GetAllFilteredManager> _logger;
 
-    public GetAllByNameManager(
+    public GetAllFilteredManager(
         IEntityLifecycleHandler<CategoryEntity, BaseRevisionEntity> repository,
-        ILogger<GetAllByNameManager> logger
+        ILogger<GetAllFilteredManager> logger
         )
     {
         _lifeCycleHandler = repository;
@@ -23,6 +23,6 @@ public class GetAllByNameManager : IGetAllByNameManager
     {
         _logger.LogInformation("Getting all categories by name: {name}", name);
         var matchingCategories = await _lifeCycleHandler.FindAllAsync((x) => x.Name.ToLower().Contains(name.ToLower()), cancellationToken: cancellationToken);
-        return matchingCategories.Where(c => c.Revision.Action != RevisionAction.Deleted);
+        return matchingCategories.Where(c => c.Revision.Action != RevisionAction.Deleted && c.Revision.Status == RevisionStatus.Active);
     }
 }

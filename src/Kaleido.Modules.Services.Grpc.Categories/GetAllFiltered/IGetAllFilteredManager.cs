@@ -4,7 +4,7 @@ using Kaleido.Modules.Services.Grpc.Categories.Common.Models;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.GetAllByName;
 
-public interface IGetAllByNameManager
+public interface IGetAllFilteredManager
 {
     Task<IEnumerable<EntityLifeCycleResult<CategoryEntity, BaseRevisionEntity>>> GetAllByNameAsync(string name, CancellationToken cancellationToken = default);
 }

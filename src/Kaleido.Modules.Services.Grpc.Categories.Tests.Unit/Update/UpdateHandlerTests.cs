@@ -40,7 +40,8 @@ namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Unit.Update
             };
 
             // Happy path setup
-            _mocker.Use(new CategoryActionValidator());
+            _mocker.Use(new KeyValidator());
+            _mocker.Use(new CategoryValidator());
 
             var mapper = new MapperConfiguration(cfg =>
             {

@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
@@ -5,7 +6,8 @@ using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.GetRevision;
 
-public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
+[Collection("Infrastructure collection")]
+public class GetRevisionIntegrationTests
 {
     private readonly InfrastructureFixture _fixture;
 
@@ -21,7 +23,7 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
         var createCategory = new CreateCategoryBuilder().Build();
         var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
 
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 1 };
+        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) };
         var response = await _fixture.Client.GetCategoryRevisionAsync(request);
 
         Assert.NotNull(response.Revision);
@@ -33,19 +35,8 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     [Fact]
     public async Task GetCategoryRevision_ShouldReturnNotFound_WhenCategoryDoesNotExist()
     {
-        var request = new GetCategoryRevisionRequest { Key = Guid.NewGuid().ToString(), Revision = 1 };
+        var request = new GetCategoryRevisionRequest { Key = Guid.NewGuid().ToString(), CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) };
 
-        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetCategoryRevisionAsync(request));
-        Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetCategoryRevision_ShouldReturnNotFound_WhenRevisionDoesNotExist()
-    {
-        var createCategory = new CreateCategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
-
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 2 };
         var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetCategoryRevisionAsync(request));
         Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
     }
@@ -55,6 +46,7 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
     {
         var createCategory = new CreateCategoryBuilder().Build();
         var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
+        var createdAt = createResponse.Revision.CreatedAt;
 
         var updatedCategory = new CategoryBuilder()
             .WithName(createResponse.Category.Name + " - Updated")
@@ -62,7 +54,7 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
 
         await _fixture.Client.UpdateCategoryAsync(new CategoryActionRequest { Key = createResponse.Key, Category = updatedCategory });
 
-        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 1 };
+        var request = new GetCategoryRevisionRequest { Key = createResponse.Key, CreatedAt = createdAt };
         var response = await _fixture.Client.GetCategoryRevisionAsync(request);
 
         Assert.NotNull(response.Revision);
@@ -79,7 +71,7 @@ public class GetRevisionIntegrationTests : IClassFixture<InfrastructureFixture>
         var request = new CategoryRequest { Key = createResponse.Key };
         await _fixture.Client.DeleteCategoryAsync(request);
 
-        var getRequest = new GetCategoryRevisionRequest { Key = createResponse.Key, Revision = 2 };
+        var getRequest = new GetCategoryRevisionRequest { Key = createResponse.Key, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) };
         var response = await _fixture.Client.GetCategoryRevisionAsync(getRequest);
 
         Assert.NotNull(response.Revision);

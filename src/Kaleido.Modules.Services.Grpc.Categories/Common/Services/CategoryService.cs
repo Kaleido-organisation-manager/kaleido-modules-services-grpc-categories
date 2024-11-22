@@ -20,7 +20,7 @@ public class CategoryService : GrpcCategoriesBase
     private readonly IDeleteHandler _deleteHandler;
     private readonly IGetHandler _getHandler;
     private readonly IGetAllHandler _getAllHandler;
-    private readonly IGetAllByNameHandler _getAllByNameHandler;
+    private readonly IGetAllFilteredHandler _getAllFilteredHandler;
     private readonly IGetAllRevisionsHandler _getAllRevisionsHandler;
     private readonly IGetRevisionHandler _getRevisionHandler;
     private readonly IUpdateHandler _updateHandler;
@@ -31,7 +31,7 @@ public class CategoryService : GrpcCategoriesBase
         IDeleteHandler deleteHandler,
         IGetHandler getHandler,
         IGetAllHandler getAllHandler,
-        IGetAllByNameHandler getAllByNameHandler,
+        IGetAllFilteredHandler getAllFilteredHandler,
         IGetAllRevisionsHandler getAllRevisionsHandler,
         IGetRevisionHandler getRevisionHandler,
         IUpdateHandler updateHandler
@@ -40,10 +40,9 @@ public class CategoryService : GrpcCategoriesBase
         _logger = logger;
         _createHandler = createHandler;
         _deleteHandler = deleteHandler;
-        // _existsHandler = existsHandler;
         _getHandler = getHandler;
         _getAllHandler = getAllHandler;
-        _getAllByNameHandler = getAllByNameHandler;
+        _getAllFilteredHandler = getAllFilteredHandler;
         _getAllRevisionsHandler = getAllRevisionsHandler;
         _getRevisionHandler = getRevisionHandler;
         _updateHandler = updateHandler;
@@ -73,10 +72,10 @@ public class CategoryService : GrpcCategoriesBase
         return await _getAllHandler.HandleAsync(request, context.CancellationToken);
     }
 
-    public override async Task<CategoryListResponse> GetAllCategoriesByName(GetAllCategoriesByNameRequest request, ServerCallContext context)
+    public override async Task<CategoryListResponse> GetAllCategoriesFiltered(GetAllCategoriesFilteredRequest request, ServerCallContext context)
     {
-        _logger.LogInformation("gRPC request received for GetAllCategoriesByName");
-        return await _getAllByNameHandler.HandleAsync(request, context.CancellationToken);
+        _logger.LogInformation("gRPC request received for GetAllCategoriesFiltered");
+        return await _getAllFilteredHandler.HandleAsync(request, context.CancellationToken);
     }
 
     public override async Task<CategoryListResponse> GetAllCategoryRevisions(CategoryRequest request, ServerCallContext context)

@@ -3,13 +3,14 @@ using Kaleido.Grpc.Categories;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
 
-namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.GetAllByName;
+namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.GetAllFiltered;
 
-public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
+[Collection("Infrastructure collection")]
+public class GetAllFilteredIntegrationTests
 {
     private readonly InfrastructureFixture _fixture;
 
-    public GetAllByNameIntegrationTests(InfrastructureFixture fixture)
+    public GetAllFilteredIntegrationTests(InfrastructureFixture fixture)
     {
         _fixture = fixture;
         _fixture.ClearDatabase().Wait();
@@ -19,7 +20,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetAllByName_WithNoCategories_ShouldReturnEmptyList()
     {
         // Act
-        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "Test" });
+        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "Test" });
 
         // Assert
         Assert.Empty(getAllByNameResponse.Categories);
@@ -33,7 +34,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
         await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
-        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "Test" });
+        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "Test" });
 
         // Assert
         Assert.Single(getAllByNameResponse.Categories);
@@ -56,7 +57,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
         }
 
         // Act
-        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "Test" });
+        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "Test" });
 
         // Assert
         Assert.Equal(3, getAllByNameResponse.Categories.Count);
@@ -66,7 +67,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
     public async Task GetAllByName_WithInvalidName_ShouldReturnValidationErrors()
     {
         // Act
-        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "" }));
+        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "" }));
 
         // Assert
         Assert.Equal(StatusCode.InvalidArgument, exception.Status.StatusCode);
@@ -80,7 +81,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
         await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
-        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "NonMatch" });
+        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "NonMatch" });
 
         // Assert
         Assert.Empty(getAllByNameResponse.Categories);
@@ -94,7 +95,7 @@ public class GetAllByNameIntegrationTests : IClassFixture<InfrastructureFixture>
         await _fixture.Client.CreateCategoryAsync(category);
 
         // Act
-        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesByNameAsync(new GetAllCategoriesByNameRequest { Name = "test" });
+        var getAllByNameResponse = await _fixture.Client.GetAllCategoriesFilteredAsync(new GetAllCategoriesFilteredRequest { Name = "test" });
 
         // Assert
         Assert.Single(getAllByNameResponse.Categories);

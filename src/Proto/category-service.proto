@@ -12,6 +12,6 @@ service GrpcCategories {
     rpc DeleteCategory(CategoryRequest) returns (CategoryResponse);
     rpc GetCategoryRevision(GetCategoryRevisionRequest) returns (CategoryResponse);
     rpc GetAllCategoryRevisions(CategoryRequest) returns (CategoryListResponse);
-    rpc GetAllCategoriesByName(GetAllCategoriesByNameRequest) returns (CategoryListResponse);
+    rpc GetAllCategoriesFiltered(GetAllCategoriesFilteredRequest) returns (CategoryListResponse);
 }
 
