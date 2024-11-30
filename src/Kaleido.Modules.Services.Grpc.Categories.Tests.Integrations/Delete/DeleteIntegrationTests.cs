@@ -1,65 +1,135 @@
-using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
+using Kaleido.Common.Services.Grpc.Constants;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
-using Renci.SshNet.Security;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Delete;
 
-[Collection("Infrastructure collection")]
-public class DeleteIntegrationTests
+[Collection(nameof(InfrastructureCollection))]
+public class DeleteIntegrationTests : IAsyncLifetime
 {
     private readonly InfrastructureFixture _fixture;
 
     public DeleteIntegrationTests(InfrastructureFixture fixture)
     {
         _fixture = fixture;
-        _fixture.ClearDatabase().Wait();
     }
 
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => _fixture.ClearDatabase();
+
     [Fact]
-    public async Task Delete_WithValidRequest_ShouldDelete()
+    public async Task DeleteCategory_ValidKey_DeletesCategory()
     {
         // Arrange
-        var createCategory = new CategoryBuilder().WithName("Test Category").Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
 
         // Act
-        var deleteResponse = await _fixture.Client.DeleteCategoryAsync(new CategoryRequest { Key = createResponse.Key });
+        var deleted = await _fixture.Client.DeleteAsync(created.Key);
 
         // Assert
-        Assert.Equal(createResponse.Key, deleteResponse.Key);
+        Assert.NotNull(deleted);
+        Assert.Equal(created.Key, deleted.Key);
+        Assert.Equal(name, deleted.Category.Name);
+        Assert.NotNull(deleted.Revision);
+        Assert.Equal(RevisionAction.Deleted, deleted.Revision.Action);
+        Assert.Equal(RevisionStatus.Active, deleted.Revision.Status);
     }
 
     [Fact]
-    public async Task Delete_WithNonExistentKey_ReturnsNotFound()
+    public async Task DeleteCategory_NonExistentKey_ThrowsNotFoundException()
     {
         // Arrange
-        var deleteRequest = new CategoryRequest { Key = Guid.NewGuid().ToString() };
+        var nonExistentKey = Guid.NewGuid();
 
-        // Act && Assert
-        var exception = await Assert.ThrowsAsync<RpcException>(async () => await _fixture.Client.DeleteCategoryAsync(deleteRequest));
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => _fixture.Client.DeleteAsync(nonExistentKey));
 
         Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
     }
 
     [Fact]
-    public async Task Delete_WithValidRequest_ShouldSoftDelete()
+    public async Task DeleteCategory_DeletedCategory_CanBeCreatedAgain()
     {
         // Arrange
-        var createCategory = new CategoryBuilder().WithName("Test Category").Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
+        await _fixture.Client.DeleteAsync(created.Key);
 
         // Act
-        var deleteResponse = await _fixture.Client.DeleteCategoryAsync(new CategoryRequest { Key = createResponse.Key });
-        var getRevisionResponse = await _fixture.Client.GetCategoryRevisionAsync(
-            new GetCategoryRevisionRequest { Key = createResponse.Key, CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow) }
-        );
+        var newCategory = await _fixture.Client.CreateAsync(name);
 
         // Assert
-        Assert.Equal(createResponse.Key, deleteResponse.Key);
-        Assert.Equal(createResponse.Key, getRevisionResponse.Key);
-        Assert.Equal("Deleted", getRevisionResponse.Revision.Action);
+        Assert.NotNull(newCategory);
+        Assert.NotEqual(created.Key, newCategory.Key); // Should be a new category
+        Assert.Equal(name, newCategory.Category.Name);
+        Assert.NotNull(newCategory.Revision);
+        Assert.Equal(RevisionAction.Created, newCategory.Revision.Action);
+        Assert.Equal(RevisionStatus.Active, newCategory.Revision.Status);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_DeletedCategory_CannotBeDeletedAgain()
+    {
+        // Arrange
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
+        await _fixture.Client.DeleteAsync(created.Key);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => _fixture.Client.DeleteAsync(created.Key));
+
+        Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_DeletedCategory_NotReturnedInGetAll()
+    {
+        // Arrange
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
+        await _fixture.Client.DeleteAsync(created.Key);
+
+        // Act
+        var allCategories = await _fixture.Client.GetAllAsync();
+
+        // Assert
+        Assert.DoesNotContain(allCategories, c => c.Key == created.Key);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_DeletedCategory_StillVisibleInRevisions()
+    {
+        // Arrange
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
+        await _fixture.Client.DeleteAsync(created.Key);
+
+        // Act
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
+
+        // Assert
+        Assert.NotEmpty(revisions);
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Created);
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Deleted);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_DeletedCategory_CannotBeRetrieved()
+    {
+        // Arrange
+        var name = "Test Category";
+        var created = await _fixture.Client.CreateAsync(name);
+        await _fixture.Client.DeleteAsync(created.Key);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<RpcException>(
+            () => _fixture.Client.GetAsync(created.Key));
+
+        Assert.Equal(StatusCode.NotFound, exception.Status.StatusCode);
     }
 }

@@ -1,112 +1,143 @@
-using Kaleido.Grpc.Categories;
-using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Builders;
+using Grpc.Core;
+using Kaleido.Common.Services.Grpc.Constants;
+using Kaleido.Common.Services.Grpc.Models;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.GetAllRevisions;
 
-[Collection("Infrastructure collection")]
-public class GetAllRevisionsIntegrationTests
+[Collection(nameof(InfrastructureCollection))]
+public class GetAllRevisionsIntegrationTests : IAsyncLifetime
 {
     private readonly InfrastructureFixture _fixture;
 
     public GetAllRevisionsIntegrationTests(InfrastructureFixture fixture)
     {
         _fixture = fixture;
-        _fixture.ClearDatabase().Wait();
+    }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => _fixture.ClearDatabase();
+
+    [Fact]
+    public async Task GetAllRevisions_NonExistentCategory_ReturnsEmptyList()
+    {
+        // Arrange
+        var nonExistentKey = Guid.NewGuid();
+
+        // Act
+        var result = await _fixture.Client.GetAllRevisionsAsync(nonExistentKey);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
     [Fact]
-    public async Task GetAllRevisions_ShouldReturnRevisions_WhenCategoryExists()
+    public async Task GetAllRevisions_NewlyCreatedCategory_ReturnsSingleRevision()
     {
         // Arrange
-        var createCategory = new CategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
+        var created = await _fixture.Client.CreateAsync("Test Category");
 
         // Act
-        var getAllRevisionsResponse = await _fixture.Client.GetAllCategoryRevisionsAsync(new CategoryRequest { Key = createResponse.Key });
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
 
         // Assert
-        Assert.NotNull(getAllRevisionsResponse.Categories);
-        Assert.NotEmpty(getAllRevisionsResponse.Categories);
-        Assert.Single(getAllRevisionsResponse.Categories);
-        Assert.Equal("Created", getAllRevisionsResponse.Categories[0].Revision.Action);
-        Assert.Equal(1, getAllRevisionsResponse.Categories[0].Revision.Revision);
+        Assert.NotNull(revisions);
+        Assert.Single(revisions);
+        var revision = revisions.First();
+        Assert.Equal(RevisionAction.Created, revision.Revision.Action);
+        Assert.Equal(RevisionStatus.Active, revision.Revision.Status);
+        Assert.Equal(1, revision.Revision.Revision);
     }
 
     [Fact]
-    public async Task GetAllRevisions_ShouldReturnRevisions_WhenCategoryIsDeleted()
+    public async Task GetAllRevisions_UpdatedCategory_ReturnsAllRevisions()
     {
         // Arrange
-        var createCategory = new CategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
-
-        await _fixture.Client.DeleteCategoryAsync(new CategoryRequest { Key = createResponse.Key });
+        var created = await _fixture.Client.CreateAsync("Original Name");
+        await _fixture.Client.UpdateAsync(created.Key, "Updated Name");
 
         // Act
-        var getAllRevisionsResponse = await _fixture.Client.GetAllCategoryRevisionsAsync(new CategoryRequest { Key = createResponse.Key });
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
 
         // Assert
-        Assert.NotNull(getAllRevisionsResponse.Categories);
-        Assert.NotEmpty(getAllRevisionsResponse.Categories);
-        Assert.Equal(2, getAllRevisionsResponse.Categories.Count);
-        Assert.Equal("Deleted", getAllRevisionsResponse.Categories.OrderByDescending(r => r.Revision.Revision).First().Revision.Action);
+        Assert.NotNull(revisions);
+        Assert.Equal(2, revisions.Count());
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Created && r.Category.Name == "Original Name");
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Updated && r.Category.Name == "Updated Name");
     }
 
     [Fact]
-    public async Task GetAllRevisions_ShouldReturnRevisions_WhenCategoryIsUpdated()
+    public async Task GetAllRevisions_DeletedCategory_IncludesDeleteRevision()
     {
         // Arrange
-        var createCategory = new CategoryBuilder().Build();
-        var createResponse = await _fixture.Client.CreateCategoryAsync(createCategory);
-
-        var updatedCategory = new CategoryBuilder()
-            .WithName("Updated Name")
-            .Build();
-
-        await _fixture.Client.UpdateCategoryAsync(new CategoryActionRequest { Key = createResponse.Key, Category = updatedCategory });
+        var created = await _fixture.Client.CreateAsync("Test Category");
+        await _fixture.Client.DeleteAsync(created.Key);
 
         // Act
-        var getAllRevisionsResponse = await _fixture.Client.GetAllCategoryRevisionsAsync(new CategoryRequest { Key = createResponse.Key });
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
 
         // Assert
-        Assert.NotNull(getAllRevisionsResponse.Categories);
-        Assert.NotEmpty(getAllRevisionsResponse.Categories);
-        Assert.Equal(2, getAllRevisionsResponse.Categories.Count);
-        Assert.Equal("Created", getAllRevisionsResponse.Categories.FirstOrDefault(r => r.Revision.Revision == 1)?.Revision.Action);
-        Assert.Equal("Updated", getAllRevisionsResponse.Categories.FirstOrDefault(r => r.Revision.Revision == 2)?.Revision.Action);
+        Assert.NotNull(revisions);
+        Assert.Equal(2, revisions.Count());
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Created);
+        Assert.Contains(revisions, r => r.Revision.Action == RevisionAction.Deleted);
     }
 
     [Fact]
-    public async Task GetAllRevisions_ShouldReturnRevisionsWithCorrectKey_ForMultipleCategories()
+    public async Task GetAllRevisions_MultipleUpdates_ReturnsAllRevisions()
     {
         // Arrange
-        var createCategory1 = new CategoryBuilder().Build();
-        var createResponse1 = await _fixture.Client.CreateCategoryAsync(createCategory1);
-
-        var createCategory2 = new CategoryBuilder().Build();
-        var createResponse2 = await _fixture.Client.CreateCategoryAsync(createCategory2);
+        var created = await _fixture.Client.CreateAsync("Original Name");
+        await _fixture.Client.UpdateAsync(created.Key, "First Update");
+        await _fixture.Client.UpdateAsync(created.Key, "Second Update");
+        await _fixture.Client.UpdateAsync(created.Key, "Third Update");
 
         // Act
-        var getAllRevisionsResponse = await _fixture.Client.GetAllCategoryRevisionsAsync(new CategoryRequest { Key = createResponse1.Key });
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
 
         // Assert
-        Assert.NotNull(getAllRevisionsResponse.Categories);
-        Assert.NotEmpty(getAllRevisionsResponse.Categories);
-        Assert.Single(getAllRevisionsResponse.Categories);
-        Assert.Equal(createResponse1.Key, getAllRevisionsResponse.Categories[0].Key);
+        Assert.NotNull(revisions);
+        Assert.Equal(4, revisions.Count());
+        Assert.Contains(revisions, r => r.Category.Name == "Original Name" && r.Revision.Action == RevisionAction.Created);
+        Assert.Contains(revisions, r => r.Category.Name == "First Update" && r.Revision.Action == RevisionAction.Updated);
+        Assert.Contains(revisions, r => r.Category.Name == "Second Update" && r.Revision.Action == RevisionAction.Updated);
+        Assert.Contains(revisions, r => r.Category.Name == "Third Update" && r.Revision.Action == RevisionAction.Updated);
     }
 
     [Fact]
-    public async Task GetAllRevisions_ShouldReturnEmptyList_WhenCategoryDoesNotExist()
+    public async Task GetAllRevisions_RevisionsAreOrderedByRevisionNumber()
     {
         // Arrange
-        var key = Guid.NewGuid().ToString();
+        var created = await _fixture.Client.CreateAsync("Original Name");
+        await _fixture.Client.UpdateAsync(created.Key, "Updated Name");
+        await _fixture.Client.DeleteAsync(created.Key);
 
         // Act
-        var getAllRevisionsResponse = await _fixture.Client.GetAllCategoryRevisionsAsync(new CategoryRequest { Key = key });
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
 
         // Assert
-        Assert.NotNull(getAllRevisionsResponse.Categories);
-        Assert.Empty(getAllRevisionsResponse.Categories);
+        var orderedRevisions = revisions.OrderBy(r => r.Revision.Revision).ToList();
+        Assert.Equal(1, orderedRevisions[0].Revision.Revision);
+        Assert.Equal(2, orderedRevisions[1].Revision.Revision);
+        Assert.Equal(3, orderedRevisions[2].Revision.Revision);
+    }
+
+    [Fact]
+    public async Task GetAllRevisions_RevisionsContainCorrectMetadata()
+    {
+        // Arrange
+        var created = await _fixture.Client.CreateAsync("Test Category");
+
+        // Act
+        var revisions = await _fixture.Client.GetAllRevisionsAsync(created.Key);
+
+        // Assert
+        var revision = revisions.Single();
+        Assert.NotEqual(Guid.Empty, revision.Revision.Key);
+        Assert.NotEqual(default, revision.Revision.CreatedAt);
+        Assert.Equal(RevisionStatus.Active, revision.Revision.Status);
+        Assert.Equal(created.Key, revision.Key);
     }
 }

@@ -3,12 +3,15 @@ using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Images;
 using Grpc.Net.Client;
+using Kaleido.Common.Services.Grpc.Constants;
 using Kaleido.Grpc.Categories;
+using Kaleido.Modules.Services.Grpc.Categories.Client.Client;
+using Kaleido.Modules.Services.Grpc.Categories.Client.Extensions;
 using Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Extensions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
-using static Kaleido.Grpc.Categories.GrpcCategories;
 
 namespace Kaleido.Modules.Services.Grpc.Categories.Tests.Integrations.Fixtures;
 
@@ -19,8 +22,8 @@ public class InfrastructureFixture : IDisposable
     private const string DB_USER = "postgres";
     private const string DB_PASSWORD = "postgres";
 
-    private string _migrationImageName = "kaleido-modules-services-grpc-products-migrations:latest";
-    private string _grpcImageName = "kaleido-modules-services-grpc-products:latest";
+    private string _migrationImageName = "kaleido-modules-services-grpc-categories-migrations:latest";
+    private string _grpcImageName = "kaleido-modules-services-grpc-categories:latest";
     private readonly bool _isLocalDevelopment;
     private IFutureDockerImage? _grpcImage;
     private IFutureDockerImage? _migrationImage;
@@ -28,7 +31,7 @@ public class InfrastructureFixture : IDisposable
     private PostgreSqlContainer _postgres { get; }
     private GrpcChannel _channel { get; set; } = null!;
 
-    public GrpcCategoriesClient Client { get; private set; } = null!;
+    public ICategoryClient Client { get; private set; } = null!;
     public IContainer GrpcContainer { get; private set; } = null!;
     public string ConnectionString { get; private set; } = null!;
 
@@ -140,7 +143,10 @@ public class InfrastructureFixture : IDisposable
         var grpcUri = new UriBuilder("http", GrpcContainer.Hostname, grpcPort);
         _channel = GrpcChannel.ForAddress(grpcUri.Uri);
 
-        Client = new GrpcCategoriesClient(_channel);
+        var services = new ServiceCollection();
+        services.AddCategoryClient(grpcUri.Uri.ToString());
+        var serviceProvider = services.BuildServiceProvider();
+        Client = serviceProvider.GetRequiredService<ICategoryClient>();
     }
 
     public async Task DisposeAsync()
@@ -159,17 +165,17 @@ public class InfrastructureFixture : IDisposable
     public async Task ClearDatabase()
     {
         // TODO: Implement
-        var categories = await Client.GetAllCategoriesAsync(new EmptyRequest());
-        foreach (var category in categories.Categories)
+        var categories = await Client.GetAllAsync(CancellationToken.None);
+        foreach (var category in categories)
         {
-            if (category.Revision.Action != "Deleted")
-                await Client.DeleteCategoryAsync(new CategoryRequest { Key = category.Key });
+            if (category.Revision.Action != RevisionAction.Deleted)
+                await Client.DeleteAsync(category.Key, CancellationToken.None);
         }
     }
 }
 
 
-[CollectionDefinition("Infrastructure collection")]
+[CollectionDefinition(nameof(InfrastructureCollection))]
 public class InfrastructureCollection : ICollectionFixture<InfrastructureFixture>
 {
     // This class has no code, and is never created. Its purpose is simply

@@ -49,6 +49,11 @@ public class UpdateHandler : IUpdateHandler
             _logger.LogError(ex, "Validation failed for update category. Key: {Key}. Errors: {Errors}", request.Key, ex.Errors.Select(e => e.ErrorMessage));
             throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message, ex));
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "An error occured while updating category with key: {Key}", request.Key);
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message, ex));
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating category");
