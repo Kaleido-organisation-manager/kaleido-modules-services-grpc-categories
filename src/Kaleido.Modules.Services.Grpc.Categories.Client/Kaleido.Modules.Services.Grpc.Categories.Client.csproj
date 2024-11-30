@@ -21,6 +21,8 @@
     <PackageReference Include="Google.Protobuf" Version="3.28.2" />
     <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.66.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.66.0" />
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="Kaleido.Common.Services.Grpc" Version="0.1.0-alpha.29" />
     <PackageReference Include="Grpc.Tools" Version="2.66.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
